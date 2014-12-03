@@ -10,3 +10,7 @@ handlers:
 
 - url: /.*
   script: _go_app
+
+skip_files:
+- ^node_modules$
+- ^src$

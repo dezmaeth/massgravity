@@ -1,64 +1,15 @@
-var THREEx = THREEx || {}
+var THREEx = THREEx || {};
 
-THREEx.Planets	= {}
+THREEx.Planets	= {};
 
-THREEx.Planets.baseURL	= '../objects/'
-
-
-THREEx.createAtmosphereMaterial	= function(){
-	var vertexShader	= [
-		'varying vec3 vNormal;',
-		'void main(){',
-		'	// compute intensity',
-		'	vNormal		= normalize( normalMatrix * normal );',
-		'	// set gl_Position',
-		'	gl_Position	= projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
-		'}',
-	].join('\n')
-	var fragmentShader	= [
-		'uniform float coeficient;',
-		'uniform float power;',
-		'uniform vec3  glowColor;',
-
-		'varying vec3  vNormal;',
-
-		'void main(){',
-		'	float intensity	= pow( coeficient - dot(vNormal, vec3(0.0, 0.0, 1.0)), power );',
-		'	gl_FragColor	= vec4( glowColor * intensity, 1.0 );',
-		'}',
-	].join('\n')
-
-	// create custom material from the shader code above
-	//   that is within specially labeled script tags
-	var material	= new THREE.ShaderMaterial({
-		uniforms: { 
-			coeficient	: {
-				type	: "f", 
-				value	: 1.0
-			},
-			power		: {
-				type	: "f",
-				value	: 2
-			},
-			glowColor	: {
-				type	: "c",
-				value	: new THREE.Color('pink')
-			},
-		},
-		vertexShader	: vertexShader,
-		fragmentShader	: fragmentShader,
-		side		: THREE.FrontSide,
-		blending	: THREE.AdditiveBlending,
-		transparent	: true,
-		overdraw: true,
-		depthWrite	: false,
-	});
-	return material
-};
+THREEx.Planets.baseURL	= '../objects/';
+THREEx.Planets.Earth = {};
 
 
-THREEx.Planets.createEarth	= function(){
-	var geometry	= new THREE.SphereGeometry(0.5, 32, 32)
+THREEx.Planets.Earth.create	= function(size){
+	var containerEarth	= new THREE.Object3D();
+
+	var geometry	= new THREE.SphereGeometry(size, 32, 32);
 	var material	= new THREE.MeshPhongMaterial({
 		overdraw: true,
 		map			: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/earthmap1k.jpg'),
@@ -68,14 +19,57 @@ THREEx.Planets.createEarth	= function(){
 		shininess  : 15,
 		specular	: new THREE.Color('grey'),
 	});
-	var mesh	= new THREE.Mesh(geometry, material);
+	var earthMesh	= new THREE.Mesh(geometry, material);
+	earthMesh.name = "EARTH";
+	containerEarth.add(earthMesh);
+	
+	var geometry	= new THREE.SphereGeometry(size, 32, 32);
+	var material	= THREEx.createAtmosphereMaterial();
+	material.uniforms.glowColor.value.set(0x00b3ff);
+	material.uniforms.coeficient.value	= 0.8;
+	material.uniforms.power.value		= 2.0;
+	var atmosphereMesh	= new THREE.Mesh(geometry, material );
+	atmosphereMesh.scale.multiplyScalar(1.01);
+	containerEarth.add( atmosphereMesh );
 
-	return mesh;
+	var geometry	= new THREE.SphereGeometry(size, 32, 32);
+	var material	= THREEx.createAtmosphereMaterial();
+	material.side	= THREE.BackSide;
+	material.uniforms.glowColor.value.set(0x00b3ff)
+	material.uniforms.coeficient.value	= 0.4
+	material.uniforms.power.value		= 4.0
+	var atmosphereMeshGlow	= new THREE.Mesh(geometry, material );
+	atmosphereMeshGlow.scale.multiplyScalar(1.15);
+	containerEarth.add( atmosphereMeshGlow );
+
+	var cloudMesh	= THREEx.Planets.Earth.clouds(size);
+	containerEarth.add(cloudMesh);
+
+	var moonMesh	= THREEx.Planets.Earth.moon();
+	moonMesh.position.set( 2 , 2 ,0);
+	moonMesh.scale.multiplyScalar(1/12)
+	moonMesh.castShadow	= true
+	containerEarth.add(moonMesh);
+
+	moonMesh.angle = 0;
+	onRenderFcts.push(function(delta, now){
+		earthMesh.rotation.y  += 1/64 * delta;
+		cloudMesh.rotation.y  += 1/32 * delta;
+		moonMesh.angle += 1 / 128;
+		
+		moonMesh.position.set(2 * Math.cos(moonMesh.angle),2 * Math.sin(moonMesh.angle),0);
+		
+		if (moonMesh.angle >= 360)
+			moonMesh.angle = 0;
+
+	});
+
+	return containerEarth;
 };
 
 
 
-THREEx.Planets.createEarthLabel = function() {
+THREEx.Planets.Earth.label = function() {
 	var label = document.createElement( 'div' );
 	label.className = "label";
 	label.innerHTML = "Earth";
@@ -85,7 +79,7 @@ THREEx.Planets.createEarthLabel = function() {
 
 
 
-THREEx.Planets.createEarthCloud	= function(){
+THREEx.Planets.Earth.clouds	= function(size){
 	// create destination canvas
 	var canvasResult	= document.createElement('canvas')
 	canvasResult.width	= 1024
@@ -132,7 +126,7 @@ THREEx.Planets.createEarthCloud	= function(){
 	}, false);
 	imageMap.src	= THREEx.Planets.baseURL+'earth/images/earthcloudmap.jpg';
 
-	var geometry	= new THREE.SphereGeometry(0.51, 32, 32)
+	var geometry	= new THREE.SphereGeometry(size * 1.02, 32, 32)
 	var material	= new THREE.MeshPhongMaterial({
 		overdraw: true,
 		map		: new THREE.Texture(canvasResult),
@@ -144,7 +138,7 @@ THREEx.Planets.createEarthCloud	= function(){
 	return mesh	
 }
 
-THREEx.Planets.createEarthMoon = function() {
+THREEx.Planets.Earth.moon = function() {
 	var geometry	= new THREE.SphereGeometry(0.5, 32, 32)
 	var material	= new THREE.MeshPhongMaterial({
 		overdraw: true,
@@ -157,3 +151,4 @@ THREEx.Planets.createEarthMoon = function() {
 
 	return mesh;
 };
+

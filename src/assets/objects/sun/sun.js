@@ -67,17 +67,9 @@ THREEx.Planets.sunLabel = function() {
 
 }
 
-THREEx.Planets.makeSun 	= function(){
+THREEx.Planets.makeSun 	= function(name){
 	var diameter = 5;	
-	/*var geometry	= new THREE.SphereGeometry(diameter - 2, 32, 32)
-	var texture	= THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'sun/images/sunmap.jpg')
-	var material	= new THREE.MeshBasicMaterial({ 
-		color: 0xFFC65C,
-		specularMap : texture,
-		overdraw: true
-	});*/
 
-	//var mesh	= new THREE.Mesh(geometry, material)
 	var geometry	= new THREE.SphereGeometry(diameter + 0.1 , 32, 32)
 	
 	var material	= THREEx.createAtmosphereMaterial()
@@ -85,6 +77,7 @@ THREEx.Planets.makeSun 	= function(){
 	material.uniforms.coeficient.value	= 0.5
 	material.uniforms.power.value		= 2.0
 	var mesh 		= new THREE.Mesh(geometry, material );
+	mesh.name = name;
 	mesh.scale.multiplyScalar(1.01);
 
 	var geometry	= new THREE.SphereGeometry(diameter + 0.1 , 32, 32)
@@ -149,5 +142,30 @@ THREEx.Planets.makeSun 	= function(){
 	lensFlare.customUpdateCallback = lensFlareUpdateCallback;
 	mesh.add(lensFlare);
 
-	return mesh;
+	sunContainer = new THREE.Object3D();
+	sunContainer.add( mesh );
+
+	var light	= new THREE.PointLight( 0xffffff, 1 , 0 );
+	light.position.set(0,0,0);
+	light.castShadow	= true;
+	light.shadowCameraNear	= 0.01;
+	light.shadowCameraFar	= 15;
+	light.shadowCameraFov	= 45;
+
+	light.shadowCameraLeft	= -3;
+	light.shadowCameraRight	=  3;
+	light.shadowCameraTop	=  3;
+	light.shadowCameraBottom= -3;
+	
+
+	light.shadowBias	= 0.001;
+	light.shadowDarkness	= 0.2;
+
+	light.shadowMapWidth	= 1024;
+	light.shadowMapHeight	= 1024;
+	light.angle = 0;
+
+	sunContainer.add(light);
+
+	return sunContainer;
 }

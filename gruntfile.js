@@ -61,7 +61,7 @@ module.exports = function(grunt) {
     },
     watch: {
       files: ["src/assets/less/*.less", "src/assets/objects/**/*","src/libs/**/*" ,"src/main.js"],
-      tasks: ['less','cssmin','concat','uglify','htmlmin','copy']
+      tasks: ['less','cssmin','concat','htmlmin','copy']
     }
   });
 
@@ -72,5 +72,5 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-copy');
-  grunt.registerTask('default', ['less','cssmin','concat','uglify','htmlmin','copy']);
+  grunt.registerTask('default', ['less','cssmin','concat','htmlmin','copy']);
 };
