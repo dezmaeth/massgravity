@@ -14,3 +14,4 @@ handlers:
 skip_files:
 - ^node_modules$
 - ^src$
+- ^.git$
