@@ -140,6 +140,7 @@ THREEx.Planets.makeSun 	= function(name){
 	lensFlare.add( textureFlare3, 70, 1.0, THREE.AdditiveBlending );
 
 	lensFlare.customUpdateCallback = lensFlareUpdateCallback;
+	lensFlare.name = name + "_flare";
 	mesh.add(lensFlare);
 
 	sunContainer = new THREE.Object3D();

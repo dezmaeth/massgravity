@@ -34,7 +34,7 @@ var cssScene	= new THREE.Scene();
 var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);	
 var controls	= new THREE.OrbitControls(camera);
 controls.noPan = true;
-controls.noZoom = true;
+//controls.noZoom = true;
 var selectedTarget = false;
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -137,6 +137,11 @@ require(["../objects/sun/sun"],function() {
 	sunObject.position.set(objPos.x,objPos.y,objPos.z);
 	glscene.add(sunObject);
 
+
+
+	controls.target = sunObject.position;
+	camera.lookAt(sunObject.position);
+	camera.position.set(0,100,50);
 	//////////////////////
 	//	SUN LABEL
 	//////////////////////
@@ -145,9 +150,13 @@ require(["../objects/sun/sun"],function() {
 	sunLabel.scale.multiplyScalar(1/128);
 	sunLabel.position.set(sunObject.position.x + 10 , sunObject.position.y, sunObject.position.z);
 	cssScene.add(sunLabel);
+	*/
+	
 
-	onRenderFcts.push(function(delta, now){ 
-		sunLabel.lookAt(camera.position);
+	var lensFlare = glscene.getObjectByName( "sun_1_flare", true );
+	console.log(lensFlare);
+	/*onRenderFcts.push(function(delta, now){ 
+	
 	});*/
 
 
@@ -190,8 +199,6 @@ require(["../objects/earth/earth"],function() {
 	/////////////////////////////////
 
 	glscene.add(containerEarth);
-	controls.target = containerEarth.position;
-	camera.lookAt(containerEarth.position);
 
 	/////////////////////////////////
 	// CLICK EARTH LISTENERS
@@ -202,11 +209,31 @@ require(["../objects/earth/earth"],function() {
 		}
 	}, false);
 
-	domEvents.addEventListener(glscene.getObjectByName( "EARTH", true ), 'mouseover',  function(event) {
-		
-	}, false);
+
+	// LINE TEST
+	var geometry = new THREE.Geometry();
+	geometry.vertices.push(containerEarth.position);
+	geometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
+
+	var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 0.5 } ) );
+	glscene.add( line );
 
 });
+
+
+//////////////////////////////////////////////////////////////////////////////////
+//		Layout maximun geometry
+//////////////////////////////////////////////////////////////////////////////////
+
+
+var radius   = 80,
+    segments = 64,
+    material = new THREE.LineBasicMaterial( { color: 0xFF9900, opacity: 0.5 } ),
+    geometry = new THREE.CircleGeometry( radius, segments );
+
+// Remove center vertex
+geometry.vertices.shift();
+glscene.add( new THREE.Line( geometry, material ) );
 
 
 //////////////////////////////////////////////////////////////////////////////////

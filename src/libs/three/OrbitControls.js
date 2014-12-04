@@ -44,8 +44,8 @@ THREE.OrbitControls = function ( object, domElement) {
 	this.zoomSpeed = 1.0;
 
 	// Limits to how far you can dolly in and out
-	this.minDistance = 0.08;
-	this.maxDistance = 30;
+	this.minDistance = 0.5;
+	this.maxDistance = 150;
 
 	// Set to true to disable this control
 	this.noRotate = false;
@@ -66,6 +66,9 @@ THREE.OrbitControls = function ( object, domElement) {
 
 	// Set to true to disable use of the keys
 	this.noKeys = false;
+
+
+	var mouseButtonsBinding = { rotate: 2, zoom: 1,  pan: 0 };
 
 	// The four arrow keys
 	this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40 };
@@ -323,21 +326,21 @@ THREE.OrbitControls = function ( object, domElement) {
 		if ( scope.enabled === false ) return;
 		event.preventDefault();
 
-		if ( event.button === 0 ) {
+		if ( event.button === mouseButtonsBinding.rotate ) {
 			if ( scope.noRotate === true ) return;
 
 			state = STATE.ROTATE;
 
 			rotateStart.set( event.clientX, event.clientY );
 
-		} else if ( event.button === 1 ) {
+		} else if ( event.button === mouseButtonsBinding.zoom ) {
 			if ( scope.noZoom === true ) return;
 
 			state = STATE.DOLLY;
 
 			dollyStart.set( event.clientX, event.clientY );
 
-		} else if ( event.button === 2 ) {
+		} else if ( event.button === mouseButtonsBinding.pan ) {
 			if ( scope.noPan === true ) return;
 
 			state = STATE.PAN;
