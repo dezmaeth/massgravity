@@ -153,10 +153,10 @@ THREEx.Planets.makeSun 	= function(name){
 	light.shadowCameraFar	= 15;
 	light.shadowCameraFov	= 45;
 
-	light.shadowCameraLeft	= -3;
-	light.shadowCameraRight	=  3;
-	light.shadowCameraTop	=  3;
-	light.shadowCameraBottom= -3;
+	light.shadowCameraLeft	= -10;
+	light.shadowCameraRight	=  10;
+	light.shadowCameraTop	=  10;
+	light.shadowCameraBottom= -10;
 	
 
 	light.shadowBias	= 0.001;

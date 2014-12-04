@@ -19,7 +19,7 @@ if (window.WebGLRenderingContext) {
 } else {
 	var renderer = new THREE.CanvasRenderer({ wireframe: false });
 }
-renderer.setClearColor(new THREE.Color('lightgrey'), 1)
+renderer.setClearColor(new THREE.Color(0x000000), 1)
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.domElement.className = "glworld";
 document.body.appendChild( renderer.domElement );
@@ -62,16 +62,18 @@ var cameraFocusCallBack = function(object) {
 		var destination =  vector.clone();
 		
 		controls.target = vector;
-		controls.enabled = false;
+		//controls.enabled = false;
 		var separation = object.target.geometry.boundingSphere.radius;
 	}
 	
-	var tween = new TWEEN.Tween(camera.position).to(destination.add(new THREE.Vector3(0,0,separation * 5)), 4000).onUpdate(function() {
+	/*var tween = new TWEEN.Tween(camera.position).to(destination.add(new THREE.Vector3(0,0,separation * 5)), 4000).onUpdate(function() {
 		//check % callback
 
 	}).easing( TWEEN.Easing.Sinusoidal.InOut ).onComplete(function() {
 		controls.enabled = true;
-	}).start();
+	}).start();*/
+
+	
 };
 
 
@@ -93,37 +95,9 @@ var cameraFocusObject = function(object,callback) {
 //////////////////////////////////////////////////////////////////////////////////
 
 require(["../objects/skybox/skybox"], function() { 
-	var mesh = THREEx.Planets.createStarBox();
-	glscene.add(mesh);
+	var skybox = THREEx.Planets.createStarBox();
+	glscene.add(skybox);
 });
-
-//////////////////////////////////////////////////////////////////////////////////
-//		Agregar Skybox
-//////////////////////////////////////////////////////////////////////////////////
-require(["../objects/ships/shiptest/shiptest"], function() { 
-	THREEx.Ships.createTestShip(function(testship) {
-		testship.name = "testship";
-		//glscene.add(testship);
-
-		testship.position.x = 40;
-		testship.position.y = 40;
-		onRenderFcts.push(function(delta, now){
-			testship.rotation.y  += 1/32 * delta;
-		});
-	
-
-		///////////////////////////////
-		//	TEST SHIP CLICK LISTENER
-		///////////////////////////////
-
-		/*domEvents.addEventListener(glscene.getObjectByName( "testship", true ), 'dblclick',function(event) { 
-			if (selectedTarget !== event.target) {
-				cameraFocusCallBack(event);
-			}
-		});*/
-	});
-});
-
 
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -179,7 +153,7 @@ require(["../objects/earth/earth"],function() {
 	var earthDist = { x:50 , y:40 , z: 0};
 	
 
-	var containerEarth	= THREEx.Planets.Earth.create(1);
+	var containerEarth	= THREEx.Planets.Earth.create(4);
 	containerEarth.position.set(earthDist.x,earthDist.y,earthDist.z);
 
 	//////////////////////
@@ -210,15 +184,52 @@ require(["../objects/earth/earth"],function() {
 	}, false);
 
 
-	// LINE TEST
-	var geometry = new THREE.Geometry();
-	geometry.vertices.push(containerEarth.position);
-	geometry.vertices.push(new THREE.Vector3( 0, 0, 0 ));
 
-	var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 0.5 } ) );
-	glscene.add( line );
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Shiptest
+	//////////////////////////////////////////////////////////////////////////////////
+	require(["../objects/ships/probe/probe"], function() { 
+		THREEx.Ships.createTestShip(function(testship) {
+			testship.name = "probe";
+			testship.castShadow = true;
+			testship.receiveShadow  = true;
+			glscene.add(testship);
+
+			testship.position.x = 40;
+			testship.position.y = 39;
+			testship.position.z = 0;
+			testship.scale.multiplyScalar(1/1024);
+			onRenderFcts.push(function(delta, now){
+				testship.rotation.y  += 1/32 * delta;
+			});
+
+
+				// LINE TEST
+			var geometry = new THREE.Geometry();
+			geometry.vertices.push(containerEarth.position);
+			geometry.vertices.push(testship.position);
+
+			var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0x0066FF} ) );
+			glscene.add( line );
+		
+
+			///////////////////////////////
+			//	TEST SHIP CLICK LISTENER
+			///////////////////////////////
+
+			domEvents.addEventListener(glscene.getObjectByName( "probe", true ), 'dblclick',function(event) { 
+				if (selectedTarget !== event.target) {
+					cameraFocusCallBack(event);
+				}
+			});
+		});
+	});
 
 });
+
+
+
+
 
 
 //////////////////////////////////////////////////////////////////////////////////

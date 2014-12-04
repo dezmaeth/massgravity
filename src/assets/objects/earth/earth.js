@@ -22,6 +22,8 @@ THREEx.Planets.Earth.create	= function(size){
 	var earthMesh	= new THREE.Mesh(geometry, material);
 	earthMesh.name = "EARTH";
 	containerEarth.add(earthMesh);
+	earthMesh.castShadow = true;
+	earthMesh.receiveShadow = true;
 	
 	var geometry	= new THREE.SphereGeometry(size, 32, 32);
 	var material	= THREEx.createAtmosphereMaterial();
@@ -30,6 +32,7 @@ THREEx.Planets.Earth.create	= function(size){
 	material.uniforms.power.value		= 2.0;
 	var atmosphereMesh	= new THREE.Mesh(geometry, material );
 	atmosphereMesh.scale.multiplyScalar(1.01);
+	atmosphereMesh.receiveShadow = true;
 	containerEarth.add( atmosphereMesh );
 
 	var geometry	= new THREE.SphereGeometry(size, 32, 32);
@@ -43,12 +46,14 @@ THREEx.Planets.Earth.create	= function(size){
 	containerEarth.add( atmosphereMeshGlow );
 
 	var cloudMesh	= THREEx.Planets.Earth.clouds(size);
+	cloudMesh.receiveShadow = true;
 	containerEarth.add(cloudMesh);
 
 	var moonMesh	= THREEx.Planets.Earth.moon();
 	moonMesh.position.set( 2 , 2 ,0);
 	moonMesh.scale.multiplyScalar(1/12)
-	moonMesh.castShadow	= true
+	moonMesh.castShadow	= true;
+
 	containerEarth.add(moonMesh);
 
 	moonMesh.angle = 0;
