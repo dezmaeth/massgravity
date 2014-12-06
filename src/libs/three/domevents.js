@@ -320,7 +320,7 @@ THREEx.DomEvents.prototype._onMove	= function(eventName, mouseX, mouseY, origDom
 
 THREEx.DomEvents.prototype._onEvent	= function(eventName, mouseX, mouseY, origDomEvent)
 {
-//console.log('eventName', eventName, 'boundObjs', this._boundObjs[eventName])
+	//console.log('eventName', eventName, 'boundObjs', this._boundObjs[eventName])
 	// get objects bound to this event
 	var boundObjs	= this._boundObjs[eventName];
 	if( boundObjs === undefined || boundObjs.length === 0 )	return;
@@ -343,15 +343,21 @@ THREEx.DomEvents.prototype._onEvent	= function(eventName, mouseX, mouseY, origDo
 	    raycaster.set( this._camera.position, vector.sub( this._camera.position ).normalize() );
 	}
 
-	var intersects = raycaster.intersectObjects( boundObjs );
-
+	var intersects = raycaster.intersectObjects( boundObjs, true);
 	// if there are no intersections, return now
 	if( intersects.length === 0 )	return;
 
-	// init some vairables
+	// init some variables
 	var intersect	= intersects[0];
 	var object3d	= intersect.object;
 	var objectCtx	= this._objectCtxGet(object3d);
+	var objectParent = object3d.parent;
+
+	while ( typeof(objectCtx) == 'undefined' && objectParent )
+	{
+	    objectCtx = this._objectCtxGet(objectParent);
+	    objectParent = objectParent.parent;
+	}
 	if( !objectCtx )	return;
 
 	// notify handlers

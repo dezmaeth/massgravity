@@ -125,13 +125,6 @@ require(["../objects/sun/sun"],function() {
 	sunLabel.position.set(sunObject.position.x + 10 , sunObject.position.y, sunObject.position.z);
 	cssScene.add(sunLabel);
 	*/
-	
-
-	var lensFlare = glscene.getObjectByName( "sun_1_flare", true );
-	console.log(lensFlare);
-	/*onRenderFcts.push(function(delta, now){ 
-	
-	});*/
 
 
 	///////////////////////////
@@ -189,25 +182,23 @@ require(["../objects/earth/earth"],function() {
 	//		Shiptest
 	//////////////////////////////////////////////////////////////////////////////////
 	require(["../objects/ships/probe/probe"], function() { 
-		THREEx.Ships.createTestShip(function(testship) {
-			testship.name = "probe";
-			testship.castShadow = true;
-			testship.receiveShadow  = true;
-			glscene.add(testship);
+		THREEx.Ships.createTestShip(function(probe) {
+			
+			probe.scale.multiplyScalar(1/1024);
+			probe.castShadow = true;
+			probe.receiveShadow  = true;
+			
+			probe.name = "probe";
+			glscene.add(probe);
 
-			testship.position.x = 40;
-			testship.position.y = 39;
-			testship.position.z = 0;
-			testship.scale.multiplyScalar(1/1024);
-			onRenderFcts.push(function(delta, now){
-				testship.rotation.y  += 1/32 * delta;
-			});
-
+			probe.position.x = 40;
+			probe.position.y = 39;
+			probe.position.z = 0;
 
 				// LINE TEST
 			var geometry = new THREE.Geometry();
 			geometry.vertices.push(containerEarth.position);
-			geometry.vertices.push(testship.position);
+			geometry.vertices.push(probe.position);
 
 			var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0x0066FF} ) );
 			glscene.add( line );
@@ -216,8 +207,7 @@ require(["../objects/earth/earth"],function() {
 			///////////////////////////////
 			//	TEST SHIP CLICK LISTENER
 			///////////////////////////////
-
-			domEvents.addEventListener(glscene.getObjectByName( "probe", true ), 'dblclick',function(event) { 
+			domEvents.addEventListener(probe, 'dblclick',function(event) { 
 				if (selectedTarget !== event.target) {
 					cameraFocusCallBack(event);
 				}
