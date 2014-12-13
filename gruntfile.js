@@ -60,7 +60,7 @@ module.exports = function(grunt) {
       },
     },
     watch: {
-      files: ["src/assets/less/*.less", "src/assets/objects/**/*","src/libs/**/*" ,"src/main.js"],
+      files: ["src/assets/less/*.less", "src/assets/objects/**/*","src/libs/**/*" ,"src/main.js","src/assets/html/*.html"],
       tasks: ['less','cssmin','concat','htmlmin','copy']
     }
   });
