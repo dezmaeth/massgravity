@@ -7,10 +7,18 @@ THREEx.Planets.baseURL	= '../objects/'
 THREEx.Planets.createStarBox = function() { 
 
 
-	var urlPrefix	= THREEx.Planets.baseURL + "skybox/images/";
+	/* original test skybox
+  var urlPrefix	= THREEx.Planets.baseURL + "skybox/images/";
 	var urls = [ urlPrefix + "s_px.jpg", urlPrefix + "s_nx.jpg",
 			urlPrefix + "s_py.jpg", urlPrefix + "s_ny.jpg",
 			urlPrefix + "s_pz.jpg", urlPrefix + "s_nz.jpg" ];
+  */
+
+  // test coordenadas spacescape source
+  var urlPrefix = THREEx.Planets.baseURL + "skybox/empty_space/";
+  var urls = [ urlPrefix + "m_RT.jpg", urlPrefix + "m_LF.jpg",
+      urlPrefix + "m_UP.jpg", urlPrefix + "m_DN.jpg",
+      urlPrefix + "m_FT.jpg", urlPrefix + "m_BK.jpg" ];
 
 	var textureCube	= THREE.ImageUtils.loadTextureCube( urls );	
 	textureCube.format = THREE.RGBFormat;
