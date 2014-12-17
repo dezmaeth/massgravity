@@ -181,9 +181,9 @@ require(["../objects/earth/earth"],function() {
 	//////////////////////////////////////////////////////////////////////////////////
 	//		Shiptest
 	//////////////////////////////////////////////////////////////////////////////////
-	require(["../objects/ships/probe/probe"], function() { 
+	require(["../objects/ships/probe/probeObject"], function() { 
 		THREEx.Ships.createTestShip(function(probe) {
-			
+
 			probe.scale.multiplyScalar(1/1024);
 			probe.castShadow = true;
 			probe.receiveShadow  = true;

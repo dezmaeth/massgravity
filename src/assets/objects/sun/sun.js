@@ -68,6 +68,7 @@ THREEx.Planets.sunLabel = function() {
 }
 
 THREEx.Planets.makeSun 	= function(name){
+	var sunContainer = new THREE.Object3D();
 	var diameter = 5;	
 
 	var geometry	= new THREE.SphereGeometry(diameter + 0.1 , 32, 32)
@@ -141,9 +142,9 @@ THREEx.Planets.makeSun 	= function(name){
 
 	lensFlare.customUpdateCallback = lensFlareUpdateCallback;
 	lensFlare.name = name + "_flare";
-	mesh.add(lensFlare);
+	sunContainer.add(lensFlare);
 
-	sunContainer = new THREE.Object3D();
+	
 	sunContainer.add( mesh );
 
 	var light	= new THREE.PointLight( 0xffffff, 1 , 0 );
