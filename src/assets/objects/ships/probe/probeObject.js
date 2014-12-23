@@ -12,7 +12,7 @@ THREEx.Ships.createTestShip = function(onLoaded, onProgress, onError) {
 		weapons:  [  [ "weapon.js", "weapon.png" ]
 					],
 		body: "probe.js",
-		skins: [ "probetest.jpg"]
+		skins: [ "probe_difuse.jpg"]
 	};
 
 	probeModel = new THREE.MD2Character();

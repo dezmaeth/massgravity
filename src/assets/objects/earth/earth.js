@@ -14,7 +14,7 @@ THREEx.Planets.Earth.create	= function(size){
 		overdraw: true,
 		map			: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/earthmap1k.jpg'),
 		bumpMap		: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/earthbump1k.jpg'),
-		bumpScale	: 0.02,
+		bumpScale	: 0.01,
 		specularMap	: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/earthspec1k.jpg'),
 		shininess  : 15,
 		specular	: new THREE.Color('grey'),
