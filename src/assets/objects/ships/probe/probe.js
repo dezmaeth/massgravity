@@ -7,7 +7,25 @@
 
 "scale" : 1.000000,
 
-"materials": [	{
+"materials": [	
+{
+    "DbgColor" : 15658734,
+    "DbgIndex" : 0,
+    "DbgName" : "Material",
+    "blending" : "NormalBlending",
+    "colorAmbient" : [0.6400000190734865, 0.6400000190734865, 0.6400000190734865],
+    "colorDiffuse" : [0.6400000190734865, 0.6400000190734865, 0.6400000190734865],
+    "colorSpecular" : [0.5, 0.5, 0.5],
+    "depthTest" : true,
+    "depthWrite" : true,
+    "mapDiffuse" : "maps/probe_difuse.jpg",
+    "shading" : "Lambert",
+    "specularCoef" : 50,
+    "transparency" : 1.0,
+    "transparent" : false,
+    "vertexColors" : false
+},
+{
 "DbgColor" : 15658734,
 "DbgIndex" : 0,
 "DbgName" : "md2_material"

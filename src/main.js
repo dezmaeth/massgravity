@@ -182,7 +182,10 @@ require(["../objects/earth/earth"],function() {
 	//		Shiptest
 	//////////////////////////////////////////////////////////////////////////////////
 	require(["../objects/ships/probe/probeObject"], function() { 
-		THREEx.Ships.createTestShip(function(probe) {
+		THREEx.Ships.createTestShip(function(geometry,material) {
+			var materials = new THREE.MeshFaceMaterial(material);
+
+			var probe = new THREE.Mesh( geometry, materials);
 
 			probe.scale.multiplyScalar(1/1024);
 			probe.castShadow = true;
