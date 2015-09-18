@@ -195,8 +195,13 @@ THREE.CSS3DRenderer = function () {
 
 		for ( var i = 0, l = object.children.length; i < l; i ++ ) {
 
-			renderObject( object.children[ i ], camera );
+            renderObject( object.children[ i ], camera );
 
+            if (object.children[ i ].onRender != undefined) {
+
+                object.children[ i ].onRender();
+
+			}
 		}
 
 	};

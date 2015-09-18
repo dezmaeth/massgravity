@@ -3,7 +3,7 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
     concat: {
       dist: {
-        src: ['src/libs/require.js','src/libs/three/three.js','src/libs/**/*','src/main.js'],
+        src: ['src/libs/require.js','src/libs/three/build/three.js','src/libs/three-ext/*','src/main.js'],
         dest: 'dist/js/<%= pkg.name %>.min.js'
       }
     },
@@ -60,7 +60,7 @@ module.exports = function(grunt) {
       },
     },
     watch: {
-      files: ["src/assets/less/*.less", "src/assets/objects/**/*","src/libs/**/*" ,"src/main.js","src/assets/html/*.html"],
+      files: ["src/assets/less/*.less", "src/assets/objects/**/*","src/libs/three/build/three.js","src/libs/three-ext/*" ,"src/main.js","src/assets/html/*.html"],
       tasks: ['less','cssmin','concat','htmlmin','copy']
     }
   });

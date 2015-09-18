@@ -5,7 +5,7 @@
 
 // init renderer
 
-var cssrenderer = new THREE.CSS3DRenderer(); 
+var cssrenderer = new THREE.CSS3DRenderer();
 cssrenderer.setSize( window.innerWidth, window.innerHeight );
 cssrenderer.domElement.style.position = 'absolute';
 cssrenderer.domElement.className = "cssworld";
@@ -72,8 +72,6 @@ var cameraFocusCallBack = function(object) {
 	}).easing( TWEEN.Easing.Sinusoidal.InOut ).onComplete(function() {
 		controls.enabled = true;
 	}).start();*/
-
-	
 };
 
 
@@ -106,12 +104,9 @@ require(["../objects/skybox/skybox"], function() {
 require(["../objects/sun/sun"],function() {
 	var objPos = { x:0 , y:0 , z: 0};
 
-
 	var sunObject = THREEx.Planets.makeSun("sun_1");
 	sunObject.position.set(objPos.x,objPos.y,objPos.z);
 	glscene.add(sunObject);
-
-
 
 	controls.target = sunObject.position;
 	camera.lookAt(sunObject.position);
@@ -120,11 +115,16 @@ require(["../objects/sun/sun"],function() {
 	//	SUN LABEL
 	//////////////////////
 
-	/*var sunLabel = THREEx.Planets.sunLabel();
+	var sunLabel = THREEx.Planets.sunLabel();
 	sunLabel.scale.multiplyScalar(1/128);
 	sunLabel.position.set(sunObject.position.x + 10 , sunObject.position.y, sunObject.position.z);
+
+
+    sunLabel.onRender = function() {
+        var distanceToCamera = camera.position.distanceTo(sunObject.position);
+        sunLabel.element.style.opacity = (100 - distanceToCamera) / 100;
+    };
 	cssScene.add(sunLabel);
-	*/
 
 
 	///////////////////////////
@@ -140,26 +140,26 @@ require(["../objects/sun/sun"],function() {
 
 
 //////////////////////////////////////////////////////////////////////////////////
-//		Agregar Planeta Tierra
+//		Agregar Planeta
 //////////////////////////////////////////////////////////////////////////////////
 require(["../objects/earth/earth"],function() {
 	var earthDist = { x:50 , y:40 , z: 0};
-	
-
 	var containerEarth	= THREEx.Planets.Earth.create(4);
 	containerEarth.position.set(earthDist.x,earthDist.y,earthDist.z);
 
 	//////////////////////
 	// EARTH LABEL
 	///////////////////////
-	/*var earthLabel =THREEx.Planets.Earth.Label();
-	earthLabel.scale.multiplyScalar(1/512);
+	var earthLabel =THREEx.Planets.Earth.label();
+    earthLabel.scale.multiplyScalar(1/128);
 	cssScene.add(earthLabel);
 
-	earthLabel.position.set(containerEarth.position.x + 1,containerEarth.position.y,containerEarth.position.z);
+	earthLabel.position.set(containerEarth.position.x + 7,containerEarth.position.y,containerEarth.position.z);
+
 	onRenderFcts.push(function(delta, now){
-		earthLabel.lookAt(camera.position);
-	});*/
+		var distanceToCamera = camera.position.distanceTo(containerEarth.position);
+		earthLabel.element.style.opacity = (100 - distanceToCamera) / 100;
+	});
 
 	/////////////////////////////////
 	// ADD EARTH TO SCENE
@@ -198,7 +198,6 @@ require(["../objects/earth/earth"],function() {
 			probe.position.y = 39;
 			probe.position.z = 0;
 
-				// LINE TEST
 			var geometry = new THREE.Geometry();
 			geometry.vertices.push(containerEarth.position);
 			geometry.vertices.push(probe.position);
@@ -220,9 +219,9 @@ require(["../objects/earth/earth"],function() {
 
 });
 
+function addStationToHome() {
 
-
-
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -241,12 +240,12 @@ glscene.add( new THREE.Line( geometry, material ) );
 
 
 //////////////////////////////////////////////////////////////////////////////////
-//		Comenzar el show
+//		Start the show
 //////////////////////////////////////////////////////////////////////////////////
 
 var resizeHandler = function(event) {
-	renderer.setSize( window.innerWidth, window.innerHeight )
-	camera.aspect	= window.innerWidth / window.innerHeight
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	camera.aspect	= window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 };
 
@@ -258,18 +257,18 @@ resizeHandler();
 onRenderFcts.push(function(delta, now){
 	cssrenderer.render( cssScene, camera);
 	renderer.render( glscene, camera);
-})
+});
 
 // run the rendering loop
-var lastTimeMsec= null
+var lastTimeMsec= null;
 requestAnimationFrame(function animate(nowMsec){
 	requestAnimationFrame( animate );
-	lastTimeMsec	= lastTimeMsec || nowMsec-1000/60
-	var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec)
-	lastTimeMsec	= nowMsec
+	lastTimeMsec	= lastTimeMsec || nowMsec-1000/60;
+	var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec);
+	lastTimeMsec	= nowMsec;
 	TWEEN.update(nowMsec);
 	onRenderFcts.forEach(function(onRenderFct){
 		onRenderFct(deltaMsec/1000, nowMsec/1000);
 		controls.update();
-	})
+	});
 });

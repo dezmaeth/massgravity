@@ -77,7 +77,7 @@ THREEx.Planets.Earth.create	= function(size){
 THREEx.Planets.Earth.label = function() {
 	var label = document.createElement( 'div' );
 	label.className = "label";
-	label.innerHTML = "Earth";
+	label.innerHTML = "Terra </br> (Homeworld)";
 	var object = new THREE.CSS3DObject( label );
 	return object;
 };

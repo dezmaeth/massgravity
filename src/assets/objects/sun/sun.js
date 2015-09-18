@@ -34,7 +34,7 @@ THREEx.createAtmosphereMaterial	= function(){
 		uniforms: { 
 			coeficient	: {
 				type	: "f", 
-				value	: 1.0
+				value	: 0.5
 			},
 			power		: {
 				type	: "f",
@@ -42,7 +42,7 @@ THREEx.createAtmosphereMaterial	= function(){
 			},
 			glowColor	: {
 				type	: "c",
-				value	: new THREE.Color('pink')
+				value	: new THREE.Color('red')
 			},
 		},
 		vertexShader	: vertexShader,
@@ -65,7 +65,7 @@ THREEx.Planets.sunLabel = function() {
 	
 	return object;
 
-}
+};
 
 THREEx.Planets.makeSun 	= function(name){
 	var sunContainer = new THREE.Object3D();
