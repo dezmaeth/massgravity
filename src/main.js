@@ -33,7 +33,8 @@ var glscene	= new THREE.Scene();
 var cssScene	= new THREE.Scene();
 var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);	
 var controls	= new THREE.OrbitControls(camera);
-controls.noPan = true;
+//controls.noPan = true;
+//controls.noZoom = true;
 //controls.noZoom = true;
 var selectedTarget = false;
 
@@ -42,50 +43,39 @@ var selectedTarget = false;
 //////////////////////////////////////////////////////////////////////////////////
 
 var domEvents	= new THREEx.DomEvents(camera, renderer.domElement);
-var labeltest = false;
 
 //////////////////////////////////////////////////////////////////////////////////
 //		Camera Focus
 //////////////////////////////////////////////////////////////////////////////////
 
 var cameraFocusCallBack = function(object) {
+	var destination;
 	if (object instanceof(THREE.Vector3)) {
-		var destination = object;
+
+		destination = object;
 		controls.enabled = false;
 		controls.target = object;
 
 	} else {
+
 		selectedObject = object.target;
 		
 		var vector = new THREE.Vector3();
 		vector.setFromMatrixPosition( object.target.matrixWorld );
-		var destination =  vector.clone();
-		
-		controls.target = vector;
-		//controls.enabled = false;
+		destination =  vector.clone();
 		var separation = object.target.geometry.boundingSphere.radius;
+		controls.target = vector;
 	}
 	
-	/*var tween = new TWEEN.Tween(camera.position).to(destination.add(new THREE.Vector3(0,0,separation * 5)), 4000).onUpdate(function() {
+	new TWEEN.Tween(camera.position).to(destination.add(new THREE.Vector3(0,0,separation * 5)), 2000).onUpdate(function() {
 		//check % callback
+		controls.enabled = false;
 
 	}).easing( TWEEN.Easing.Sinusoidal.InOut ).onComplete(function() {
-		controls.enabled = true;
-	}).start();*/
-};
 
-
-var cameraFocusObject = function(object,callback) {
-	selectedObject = object;
-	var tween = new TWEEN.Tween(camera.position).to(object.position.add(new THREE.Vector3(0,0,separation * 5)), 4000).onUpdate(function() {
-		//check % callback
-
-	}).easing( TWEEN.Easing.Sinusoidal.InOut ).onComplete(function() {
 		controls.enabled = true;
 
 	}).start();
-
-
 };
 
 //////////////////////////////////////////////////////////////////////////////////
