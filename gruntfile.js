@@ -56,8 +56,8 @@ module.exports = function(grunt) {
           {expand: true, cwd: 'src/assets', src: ['video/**'], dest: 'dist/'},
           {expand: true, cwd: 'src/assets', src: ['objects/**'], dest: 'dist/'},
           {expand: true, cwd: 'src/assets', src: ['music/**'], dest: 'dist/'},
-        ],
-      },
+        ]
+      }
     },
     watch: {
       files: ["src/assets/less/*.less", "src/assets/objects/**/*","src/libs/three/build/three.js","src/libs/three-ext/*" ,"src/main.js","src/assets/html/*.html"],
@@ -72,5 +72,5 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-copy');
-  grunt.registerTask('default', ['less','cssmin','concat','htmlmin','copy']);
+  grunt.registerTask('default', ['watch']);
 };

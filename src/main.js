@@ -33,9 +33,9 @@ var glscene	= new THREE.Scene();
 var cssScene	= new THREE.Scene();
 var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);	
 var controls	= new THREE.OrbitControls(camera);
-//controls.noPan = true;
-//controls.noZoom = true;
-//controls.noZoom = true;
+var planets = [];
+controls.noPan = true;
+controls.noZoom = false;
 var selectedTarget = false;
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -45,10 +45,27 @@ var selectedTarget = false;
 var domEvents	= new THREEx.DomEvents(camera, renderer.domElement);
 
 //////////////////////////////////////////////////////////////////////////////////
+//		Build Menu
+//////////////////////////////////////////////////////////////////////////////////
+
+var toggleBuildMenu = function(object) {
+	var buildMenuHTML = document.getElementById("buildMenu");
+	var heading = document.getElementById("headTitle");
+	var bonjourBtn = document.getElementById("testBtn");
+	buildMenuHTML.style.display = "block";
+    heading.innerHTML = object.name;
+
+
+    bonjourBtn.onclick = addStation;
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////////
 //		Camera Focus
 //////////////////////////////////////////////////////////////////////////////////
 
-var cameraFocusCallBack = function(object) {
+var cameraFocusCallBack = function(object,onEndCallback) {
 	var destination;
 	if (object instanceof(THREE.Vector3)) {
 
@@ -74,6 +91,8 @@ var cameraFocusCallBack = function(object) {
 	}).easing( TWEEN.Easing.Sinusoidal.InOut ).onComplete(function() {
 
 		controls.enabled = true;
+		if (onEndCallback !== undefined)
+			onEndCallback();
 
 	}).start();
 };
@@ -136,7 +155,9 @@ require(["../objects/earth/earth"],function() {
 	var earthDist = { x:50 , y:40 , z: 0};
 	var containerEarth	= THREEx.Planets.Earth.create(4);
 	containerEarth.position.set(earthDist.x,earthDist.y,earthDist.z);
-
+    containerEarth.name = "Terra";
+    containerEarth.stations = [];
+    containerEarth.gravity = 0.1;
 	//////////////////////
 	// EARTH LABEL
 	///////////////////////
@@ -154,7 +175,7 @@ require(["../objects/earth/earth"],function() {
 	/////////////////////////////////
 	// ADD EARTH TO SCENE
 	/////////////////////////////////
-
+    planets[0] = containerEarth;
 	glscene.add(containerEarth);
 
 	/////////////////////////////////
@@ -162,55 +183,65 @@ require(["../objects/earth/earth"],function() {
 	/////////////////////////////////
 	domEvents.addEventListener(glscene.getObjectByName( "EARTH", true ), 'dblclick',  function(event) {
 		if (selectedTarget !== event.target) {
-			cameraFocusCallBack(event);
+			cameraFocusCallBack(event,function() {
+				toggleBuildMenu(containerEarth);
+			});
 		}
 	}, false);
-
-
-
-	//////////////////////////////////////////////////////////////////////////////////
-	//		Shiptest
-	//////////////////////////////////////////////////////////////////////////////////
-	require(["../objects/ships/probe/probeObject"], function() { 
-		THREEx.Ships.createTestShip(function(geometry,material) {
-			var materials = new THREE.MeshFaceMaterial(material);
-
-			var probe = new THREE.Mesh( geometry, materials);
-
-			probe.scale.multiplyScalar(1/1024);
-			probe.castShadow = true;
-			probe.receiveShadow  = true;
-			
-			probe.name = "probe";
-			glscene.add(probe);
-
-			probe.position.x = 40;
-			probe.position.y = 39;
-			probe.position.z = 0;
-
-			var geometry = new THREE.Geometry();
-			geometry.vertices.push(containerEarth.position);
-			geometry.vertices.push(probe.position);
-
-			var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0x0066FF} ) );
-			glscene.add( line );
-		
-
-			///////////////////////////////
-			//	TEST SHIP CLICK LISTENER
-			///////////////////////////////
-			domEvents.addEventListener(probe, 'dblclick',function(event) { 
-				if (selectedTarget !== event.target) {
-					cameraFocusCallBack(event);
-				}
-			});
-		});
-	});
-
 });
 
-function addStationToHome() {
+function addStation() {
 
+    //////////////////////////////////////////////////////////////////////////////////
+    //		Space Station Test
+    //////////////////////////////////////////////////////////////////////////////////
+
+    require(["../objects/ships/probe/probeObject"], function() {
+        THREEx.Ships.createTestShip(function(geometry,material) {
+
+            var parent = new THREE.Object3D();
+
+            var materials = new THREE.MeshFaceMaterial(material);
+
+            var probe = new THREE.Mesh( geometry, materials);
+
+            probe.scale.multiplyScalar(1/1024);
+            probe.castShadow = true;
+            probe.receiveShadow  = true;
+
+            probe.name = "probe";
+
+            probe.rotation.z = (planets[0].stations.length * 2) * Math.PI / 3;
+
+            parent.add(probe);
+
+            var geometry = new THREE.Geometry();
+            geometry.vertices.push(new THREE.Vector3(0,0,0));
+            geometry.vertices.push(probe.position);
+
+            var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0x0066FF} ) );
+            parent.add( line );
+            planets[0].add( parent );
+
+            onRenderFcts.push(function(delta, now){
+                parent.rotation.z += (0.01 * planets[0].gravity);
+            });
+
+            planets[0].stations.push(parent);
+
+            probe.position.y = 3 + (Math.random() * 2);
+            probe.position.x = 3 + (Math.random() * 2);
+
+            ///////////////////////////////
+            //	TEST SHIP CLICK LISTENER
+            ///////////////////////////////
+            /*domEvents.addEventListener(probe, 'dblclick',function(event) {
+                if (selectedTarget !== event.target) {
+                    cameraFocusCallBack(event);
+                }
+            });*/
+        });
+    });
 }
 
 
@@ -239,6 +270,7 @@ var resizeHandler = function(event) {
 	camera.updateProjectionMatrix();
 };
 
+
 // handle window resize
 window.addEventListener('resize', resizeHandler, false);
 resizeHandler();
@@ -248,6 +280,8 @@ onRenderFcts.push(function(delta, now){
 	cssrenderer.render( cssScene, camera);
 	renderer.render( glscene, camera);
 });
+
+
 
 // run the rendering loop
 var lastTimeMsec= null;
