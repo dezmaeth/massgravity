@@ -3,7 +3,10 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
     concat: {
       dist: {
-        src: ['src/libs/require.js','src/libs/three/build/three.js','src/libs/three-ext/*','src/main.js'],
+        src: ['bower_components/requirejs/require.js',
+              'bower_components/three.js/build/three.js',
+              'src/libs/three-ext/*',
+              'src/main.js'],
         dest: 'dist/js/<%= pkg.name %>.min.js'
       }
     },
@@ -60,7 +63,7 @@ module.exports = function(grunt) {
       }
     },
     watch: {
-      files: ["src/assets/less/*.less", "src/assets/objects/**/*","src/libs/three/build/three.js","src/libs/three-ext/*" ,"src/main.js","src/assets/html/*.html"],
+      files: ["src/assets/less/*.less", "src/assets/objects/**/*","src/libs/three-ext/*" ,"src/main.js","src/assets/html/*.html"],
       tasks: ['less','cssmin','concat','htmlmin','copy']
     }
   });
@@ -72,5 +75,5 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-copy');
-  grunt.registerTask('default', ['watch']);
+  grunt.registerTask('default', ['less','cssmin','concat','htmlmin','copy']);
 };

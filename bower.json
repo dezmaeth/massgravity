@@ -1,0 +1,23 @@
+{
+  "name": "massgravity",
+  "version": "0.0.1",
+  "homepage": "https://github.com/dezmaeth/massgravity",
+  "authors": [
+    "Francisco Javier <dezmaeth@gmail.com>"
+  ],
+  "description": "WebGL RTS Space Game",
+  "main": "dist/index.html",
+  "moduleType": [],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "three.js": "0.71.0",
+    "requirejs": "2.1.20"
+  }
+}
