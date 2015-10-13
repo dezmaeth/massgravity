@@ -4,7 +4,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 // init renderer
-
 var cssrenderer = new THREE.CSS3DRenderer();
 cssrenderer.setSize( window.innerWidth, window.innerHeight );
 cssrenderer.domElement.style.position = 'absolute';
@@ -19,11 +18,16 @@ if (window.WebGLRenderingContext) {
 } else {
 	var renderer = new THREE.CanvasRenderer({ wireframe: false });
 }
-renderer.setClearColor(new THREE.Color(0x000000), 1)
+renderer.setClearColor(new THREE.Color(0x000000), 1);
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.domElement.className = "glworld";
 document.body.appendChild( renderer.domElement );
 
+var rendererStats   = new THREEx.RendererStats();
+rendererStats.domElement.style.position = 'absolute';
+rendererStats.domElement.style.left = '0px';
+rendererStats.domElement.style.bottom   = '0px';
+document.body.appendChild( rendererStats.domElement );
 
 // array of functions for the rendering loop
 var onRenderFcts= [];
@@ -34,8 +38,9 @@ var cssScene	= new THREE.Scene();
 var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);	
 var controls	= new THREE.OrbitControls(camera);
 var selectedObject = false;
+var running = true;
 var planets = [];
-controls.noPan = false;
+controls.noPan = true;
 controls.noZoom = false;
 var selectedTarget = false;
 
@@ -49,15 +54,26 @@ var domEvents	= new THREEx.DomEvents(camera, renderer.domElement);
 //		Build Menu
 //////////////////////////////////////////////////////////////////////////////////
 
-var toggleBuildMenu = function(object) {
+var toggleBuildMenu = function(planet) {
 	var buildMenuHTML = document.getElementById("buildMenu");
 	var heading = document.getElementById("headTitle");
-	var bonjourBtn = document.getElementById("testBtn");
+	var testBtn = document.getElementById("testBtn");
 	buildMenuHTML.style.display = "block";
-    heading.innerHTML = object.name;
+    heading.innerHTML = planet.name;
+    // @todo : add circle on planet
+    var radius   = 5,
+        segments = 64,
+        material = new THREE.LineBasicMaterial( { color: 0x6495ed, opacity: 1 } ),
+        geometry = new THREE.CircleGeometry( radius, segments );
+    geometry.vertices.shift();
+    var outline = new THREE.Line( geometry, material );
+    onRenderFcts.push(function() {
+        outline.rotation = camera.rotation.clone();
+    });
+    planet.add(outline);
 
 
-    bonjourBtn.onclick = addStation;
+	testBtn.onclick = function () { addStation("terran","probe"); };
 };
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -119,20 +135,6 @@ require(["../objects/sun/sun"],function() {
 	controls.target = sunObject.position;
 	camera.lookAt(sunObject.position);
 	camera.position.set(0,100,50);
-	//////////////////////
-	//	SUN LABEL
-	//////////////////////
-
-	var sunLabel = THREEx.Planets.sunLabel();
-	sunLabel.scale.multiplyScalar(1/128);
-	sunLabel.position.set(sunObject.position.x + 10 , sunObject.position.y, sunObject.position.z);
-
-
-    sunLabel.onRender = function() {
-        var distanceToCamera = camera.position.distanceTo(sunObject.position);
-        sunLabel.element.style.opacity = (100 - distanceToCamera) / 100;
-    };
-	cssScene.add(sunLabel);
 
 
 	///////////////////////////
@@ -150,32 +152,36 @@ require(["../objects/sun/sun"],function() {
 //////////////////////////////////////////////////////////////////////////////////
 //		Agregar Planeta
 //////////////////////////////////////////////////////////////////////////////////
+
+
 require(["../objects/earth/earth"],function() {
 	var earthDist = { x:50 , y:40 , z: 0};
-	var containerEarth	= THREEx.Planets.Earth.create(4);
-	containerEarth.position.set(earthDist.x,earthDist.y,earthDist.z);
-    containerEarth.name = "Terra";
-    containerEarth.stations = [];
-    containerEarth.gravity = 0.1;
+    var planet_size = 4;
+	var planet	= THREEx.Planets.Earth.create(planet_size);
+	planet.position.set(earthDist.x,earthDist.y,earthDist.z);
+    planet.name = "Terra";
+    planet.stations = [];
+    planet.gravity = 0.1;
+    planet.size = planet_size;
 	//////////////////////
 	// EARTH LABEL
 	///////////////////////
-	var earthLabel =THREEx.Planets.Earth.label();
-    earthLabel.scale.multiplyScalar(1/128);
-	cssScene.add(earthLabel);
+	/*var planetLabel =THREEx.Planets.Earth.label();
+    planetLabel.scale.multiplyScalar(1/128);
+	cssScene.add(planetLabel);
 
-	earthLabel.position.set(containerEarth.position.x + 7,containerEarth.position.y,containerEarth.position.z);
+	planetLabel.position.set(planet.position.x + 7,planet.position.y,planet.position.z);
 
-	onRenderFcts.push(function(delta, now){
-		var distanceToCamera = camera.position.distanceTo(containerEarth.position);
-		earthLabel.element.style.opacity = (100 - distanceToCamera) / 100;
-	});
+	onRenderFcts.push(function(){
+		var distanceToCamera = camera.position.distanceTo(planet.position);
+		planetLabel.element.style.opacity = (100 - distanceToCamera) / 100;
+	});*/
 
 	/////////////////////////////////
 	// ADD EARTH TO SCENE
 	/////////////////////////////////
-    planets[0] = containerEarth;
-	glscene.add(containerEarth);
+    planets.push(planet);
+	glscene.add(planet);
 
 	/////////////////////////////////
 	// CLICK EARTH LISTENERS
@@ -183,40 +189,43 @@ require(["../objects/earth/earth"],function() {
 	domEvents.addEventListener(glscene.getObjectByName( "EARTH", true ), 'dblclick',  function(event) {
 		if (selectedTarget !== event.target) {
 			cameraFocusCallBack(event,function() {
-				toggleBuildMenu(containerEarth);
+				toggleBuildMenu(planet);
 			});
 		}
 	}, false);
 });
 
-function addStation() {
+function addStation(race,station) {
 
     //////////////////////////////////////////////////////////////////////////////////
-    //		Space Station Test
+    //		Space Station
     //////////////////////////////////////////////////////////////////////////////////
 
-    require(["../objects/ships/probe/probeObject"], function() {
-        THREEx.Ships.createTestShip(function(geometry,material) {
+    require(["../objects/"+race+"/" +station + "/" + station], function() {
+        THREEx.Ships.probe(function(geometry,material) {
 
             var parent = new THREE.Object3D();
 
             var materials = new THREE.MeshFaceMaterial(material);
 
-            var probe = new THREE.Mesh( geometry, materials);
+            var station = new THREE.Mesh( geometry, materials);
 
-            probe.scale.multiplyScalar(1/1024);
-            probe.castShadow = true;
-            probe.receiveShadow  = true;
+            station.scale.multiplyScalar(1/1024);
+            station.castShadow = true;
+            station.receiveShadow  = true;
 
-            probe.name = "probe";
+            station.name = "probe";
 
-            probe.rotation.z = (planets[0].stations.length * 2) * Math.PI / 3;
+            parent.rotation.z = (planets[0].stations.length * 2) * Math.PI / 12;
 
-            parent.add(probe);
+            station.position.y = (planets[0].size / 2) + 3 + (Math.random() * 2);
+            //station.position.x = 3 + (Math.random() * 2);
+
+            parent.add(station);
 
             var geometry = new THREE.Geometry();
             geometry.vertices.push(new THREE.Vector3(0,0,0));
-            geometry.vertices.push(probe.position);
+            geometry.vertices.push(station.position);
 
             var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0x0066FF} ) );
             parent.add( line );
@@ -227,25 +236,13 @@ function addStation() {
             });
 
             planets[0].stations.push(parent);
-
-            probe.position.y = 3 + (Math.random() * 2);
-            probe.position.x = 3 + (Math.random() * 2);
-
-            ///////////////////////////////
-            //	TEST SHIP CLICK LISTENER
-            ///////////////////////////////
-            /*domEvents.addEventListener(probe, 'dblclick',function(event) {
-                if (selectedTarget !== event.target) {
-                    cameraFocusCallBack(event);
-                }
-            });*/
         });
     });
 }
 
 
 //////////////////////////////////////////////////////////////////////////////////
-//		Layout maximun geometry
+//		Layout maximum geometry
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -278,6 +275,8 @@ resizeHandler();
 onRenderFcts.push(function(delta, now){
 	cssrenderer.render( cssScene, camera);
 	renderer.render( glscene, camera);
+    if (rendererStats)
+        rendererStats.update(renderer);
 });
 
 
@@ -285,13 +284,15 @@ onRenderFcts.push(function(delta, now){
 // run the rendering loop
 var lastTimeMsec= null;
 requestAnimationFrame(function animate(nowMsec){
-	requestAnimationFrame( animate );
-	lastTimeMsec	= lastTimeMsec || nowMsec-1000/60;
-	var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec);
-	lastTimeMsec	= nowMsec;
-	TWEEN.update(nowMsec);
-	onRenderFcts.forEach(function(onRenderFct){
-		onRenderFct(deltaMsec/1000, nowMsec/1000);
-		controls.update();
-	});
+    if (running) {
+        requestAnimationFrame(animate);
+        lastTimeMsec = lastTimeMsec || nowMsec - 1000 / 60;
+        var deltaMsec = Math.min(200, nowMsec - lastTimeMsec);
+        lastTimeMsec = nowMsec;
+        TWEEN.update(nowMsec);
+        onRenderFcts.forEach(function (onRenderFct) {
+            onRenderFct(deltaMsec / 1000, nowMsec / 1000);
+            controls.update();
+        });
+    }
 });
