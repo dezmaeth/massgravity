@@ -68,7 +68,8 @@ THREE.OrbitControls = function ( object, domElement) {
 	this.noKeys = false;
 
 
-	var mouseButtonsBinding = { rotate: 2, zoom: 1,  pan: 0 };
+	//var mouseButtonsBinding = { rotate: 1, zoom: 2,  pan: 0 };
+	var mouseButtonsBinding = { rotate: 1, zoom: 3,  pan: 3 };
 
 	// The four arrow keys
 	this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40 };

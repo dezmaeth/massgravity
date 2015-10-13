@@ -50,24 +50,9 @@ THREEx.Planets.Earth.create	= function(size){
 	cloudMesh.receiveShadow = true;
 	containerEarth.add(cloudMesh);
 
-	var moonMesh	= THREEx.Planets.Earth.moon();
-	moonMesh.scale.multiplyScalar(1/2);
-	moonMesh.castShadow	= false;
-    moonMesh.receiveShadow = true;
-
-	containerEarth.add(moonMesh);
-
-	moonMesh.angle = 0;
-	onRenderFcts.push(function(delta, now){
-		earthMesh.rotation.y  += 1/64 * delta;
-		cloudMesh.rotation.y  += 1/32 * delta;
-		moonMesh.angle += 1 / 256;
-		
-		moonMesh.position.set(8 * Math.cos(moonMesh.angle),8 * Math.sin(moonMesh.angle),0);
-		
-		if (moonMesh.angle >= 360)
-			moonMesh.angle = 0;
-
+	onRenderFcts.push(function(delta, now) {
+		earthMesh.rotation.y += 1 / 64 * delta;
+		cloudMesh.rotation.y += 1 / 32 * delta;
 	});
 
 	return containerEarth;
@@ -142,16 +127,3 @@ THREEx.Planets.Earth.clouds	= function(size){
 
 	return new THREE.Mesh(geometry, material);
 };
-
-THREEx.Planets.Earth.moon = function() {
-	var geometry	= new THREE.SphereGeometry(0.5, 32, 32);
-	var material	= new THREE.MeshPhongMaterial({
-		overdraw: true,
-		map			: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/moonmap1k.jpg'),
-		bumpMap		: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/moonbump1k.jpg'),
-		bumpScale	: 0.01
-	});
-
-	return new THREE.Mesh(geometry, material);;
-};
-

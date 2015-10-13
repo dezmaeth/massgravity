@@ -3,8 +3,9 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
     concat: {
       dist: {
-        src: ['bower_components/requirejs/require.js',
-              'bower_components/three.js/build/three.js',
+        src: ['bower_components/three.js/three.js',
+              'bower_components/threex.rendererstats/threex.rendererstats.js',
+              'bower_components/requirejs/require.js',
               'src/libs/three-ext/*',
               'src/main.js'],
         dest: 'dist/js/<%= pkg.name %>.min.js'
