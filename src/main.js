@@ -154,15 +154,15 @@ require(["../objects/sun/sun"],function() {
 //////////////////////////////////////////////////////////////////////////////////
 
 
-require(["../objects/earth/earth"],function() {
+require(["../objects/terra/terra"],function() {
 	var earthDist = { x:50 , y:40 , z: 0};
     var planet_size = 4;
-	var planet	= THREEx.Planets.Earth.create(planet_size);
+	var planet	= THREEx.Planets.Terra.create(planet_size);
 	planet.position.set(earthDist.x,earthDist.y,earthDist.z);
-    planet.name = "Terra";
     planet.stations = [];
     planet.gravity = 0.1;
     planet.size = planet_size;
+
 	//////////////////////
 	// EARTH LABEL
 	///////////////////////
@@ -186,7 +186,7 @@ require(["../objects/earth/earth"],function() {
 	/////////////////////////////////
 	// CLICK EARTH LISTENERS
 	/////////////////////////////////
-	domEvents.addEventListener(glscene.getObjectByName( "EARTH", true ), 'dblclick',  function(event) {
+	domEvents.addEventListener(glscene.getObjectByName( "TERRA", true ), 'dblclick',  function(event) {
 		if (selectedTarget !== event.target) {
 			cameraFocusCallBack(event,function() {
 				toggleBuildMenu(planet);
@@ -241,9 +241,7 @@ function addStation(race,station) {
 }
 
 
-//////////////////////////////////////////////////////////////////////////////////
-//		Layout maximum geometry
-//////////////////////////////////////////////////////////////////////////////////
+
 
 
 var radius   = 80,
