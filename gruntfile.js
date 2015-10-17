@@ -59,7 +59,7 @@ module.exports = function(grunt) {
           // includes files within path and its sub-directories
           {expand: true, cwd: 'src/assets', src: ['video/**'], dest: 'dist/'},
           {expand: true, cwd: 'src/assets', src: ['objects/**'], dest: 'dist/'},
-          {expand: true, cwd: 'src/assets', src: ['music/**'], dest: 'dist/'},
+          {expand: true, cwd: 'src/assets', src: ['music/**'], dest: 'dist/'}
         ]
       }
     },

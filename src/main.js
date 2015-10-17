@@ -163,19 +163,6 @@ require(["../objects/terra/terra"],function() {
     planet.gravity = 0.1;
     planet.size = planet_size;
 
-	//////////////////////
-	// EARTH LABEL
-	///////////////////////
-	/*var planetLabel =THREEx.Planets.Earth.label();
-    planetLabel.scale.multiplyScalar(1/128);
-	cssScene.add(planetLabel);
-
-	planetLabel.position.set(planet.position.x + 7,planet.position.y,planet.position.z);
-
-	onRenderFcts.push(function(){
-		var distanceToCamera = camera.position.distanceTo(planet.position);
-		planetLabel.element.style.opacity = (100 - distanceToCamera) / 100;
-	});*/
 
 	/////////////////////////////////
 	// ADD EARTH TO SCENE
@@ -223,7 +210,7 @@ function addStation(race,station) {
 
             parent.add(station);
 
-            var geometry = new THREE.Geometry();
+            geometry = new THREE.Geometry();
             geometry.vertices.push(new THREE.Vector3(0,0,0));
             geometry.vertices.push(station.position);
 
@@ -231,7 +218,7 @@ function addStation(race,station) {
             parent.add( line );
             planets[0].add( parent );
 
-            onRenderFcts.push(function(delta, now){
+            onRenderFcts.push(function(){
                 parent.rotation.z += (0.01 * planets[0].gravity);
             });
 
@@ -239,10 +226,6 @@ function addStation(race,station) {
         });
     });
 }
-
-
-
-
 
 var radius   = 80,
     segments = 64,
