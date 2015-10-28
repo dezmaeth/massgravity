@@ -37,6 +37,7 @@ var glscene	= new THREE.Scene();
 var cssScene	= new THREE.Scene();
 var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);	
 var controls	= new THREE.OrbitControls(camera);
+var groupSelection = new THREE.GroupSelection(camera);
 var selectedObject = false;
 var running = true;
 var planets = [];
