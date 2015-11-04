@@ -1,7 +1,7 @@
 var THREEx = THREEx || {}
 
 THREEx.Planets	= THREEx.Planets || {};
-THREEx.Planets.baseURL = '../objects/'
+THREEx.Planets.baseURL = 'objects/'
 
 THREEx.Planets.StarField = function() { 
 	// create the geometry sphere

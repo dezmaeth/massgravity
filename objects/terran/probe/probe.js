@@ -3,7 +3,7 @@ var THREEx = THREEx || {};
 THREEx.Ships = THREEx.Ships || {};
 
 
-THREEx.Ships.baseURL	= '../objects/terran/probe/';
+THREEx.Ships.baseURL	= 'objects/terran/probe/';
 
 THREEx.Ships.probe = function(onLoaded, onProgress, onError) {
 	

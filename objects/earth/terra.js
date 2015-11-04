@@ -2,7 +2,7 @@ var THREEx = THREEx || {};
 
 THREEx.Planets	= {};
 
-THREEx.Planets.baseURL	= '../objects/';
+THREEx.Planets.baseURL	= 'objects/';
 THREEx.Planets.Terra = {};
 
 
