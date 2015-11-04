@@ -8,6 +8,27 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
+- url: /(.*\.(svg|svgz))
+  mime_type: images/svg+xml
+  static_files: dist/\1
+  upload: dist/(.*\.(svg|svgz))
+
+- url: /(.*\.ttf)
+  mime_type: font/truetype
+  static_files: dist/\1
+  upload: dist/(.*\.ttf)
+
+- url: /(.*\.woff)
+  mime_type: application/x-font-woff
+  static_files: dist/\1
+  upload: dist/(.*\.woff)
+
+- url: /(.*\.xml)
+  mime_type: application/xml
+  static_files: dist/\1
+  upload: dist/(.*\.xml)
+  expiration: "1h"
+
 - url: /.*
   script: _go_app
 
