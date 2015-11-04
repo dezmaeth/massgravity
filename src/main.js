@@ -9,14 +9,13 @@ cssrenderer.setSize( window.innerWidth, window.innerHeight );
 cssrenderer.domElement.style.position = 'absolute';
 cssrenderer.domElement.className = "cssworld";
 document.body.appendChild( cssrenderer.domElement );
-
+var renderer = false;
 if (window.WebGLRenderingContext) {
-	var renderer = new THREE.WebGLRenderer({
-		antialias	: true,
+	renderer = new THREE.WebGLRenderer({
 		alpha: true
 	});
 } else {
-	var renderer = new THREE.CanvasRenderer({ wireframe: false });
+	renderer = new THREE.CanvasRenderer({ wireframe: false });
 }
 renderer.setClearColor(new THREE.Color(0x000000), 1);
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -33,11 +32,10 @@ document.body.appendChild( rendererStats.domElement );
 var onRenderFcts= [];
 
 // init glscene and camera
-var glscene	= new THREE.Scene();
+var glScene	= new THREE.Scene();
 var cssScene	= new THREE.Scene();
-var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);	
+var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
 var controls	= new THREE.OrbitControls(camera);
-var groupSelection = new THREE.GroupSelection(camera);
 var selectedObject = false;
 var running = true;
 var planets = [];
@@ -46,10 +44,11 @@ controls.noZoom = false;
 var selectedTarget = false;
 
 //////////////////////////////////////////////////////////////////////////////////
-//		init dom events
+//		Init dom events and Group Selection
 //////////////////////////////////////////////////////////////////////////////////
 
 var domEvents	= new THREEx.DomEvents(camera, renderer.domElement);
+var groupSelection = new THREEx.GroupSelection(camera);
 
 //////////////////////////////////////////////////////////////////////////////////
 //		Build Menu
@@ -119,19 +118,20 @@ var cameraFocusCallBack = function(object,onEndCallback) {
 
 require(["../objects/skybox/skybox"], function() { 
 	var skybox = THREEx.Planets.createStarBox();
-	glscene.add(skybox);
+	glScene.add(skybox);
 });
 
 
 //////////////////////////////////////////////////////////////////////////////////
 //		Agregar Sol
 //////////////////////////////////////////////////////////////////////////////////
+
 require(["../objects/sun/sun"],function() {
 	var objPos = { x:0 , y:0 , z: 0};
 
 	var sunObject = THREEx.Planets.makeSun("sun_1");
 	sunObject.position.set(objPos.x,objPos.y,objPos.z);
-	glscene.add(sunObject);
+	glScene.add(sunObject);
 
 	controls.target = sunObject.position;
 	camera.lookAt(sunObject.position);
@@ -142,7 +142,7 @@ require(["../objects/sun/sun"],function() {
 	//	SUN CLICK LISTENER
 	///////////////////////////
 
-	domEvents.addEventListener(glscene.getObjectByName( "sun_1", true ), 'dblclick',function(event) {
+	domEvents.addEventListener(glScene.getObjectByName( "sun_1", true ), 'dblclick',function(event) {
 		if (selectedTarget !== event.target) {
 			cameraFocusCallBack(event);
 		}
@@ -169,12 +169,12 @@ require(["../objects/terra/terra"],function() {
 	// ADD EARTH TO SCENE
 	/////////////////////////////////
     planets.push(planet);
-	glscene.add(planet);
+	glScene.add(planet);
 
 	/////////////////////////////////
 	// CLICK EARTH LISTENERS
 	/////////////////////////////////
-	domEvents.addEventListener(glscene.getObjectByName( "TERRA", true ), 'dblclick',  function(event) {
+	domEvents.addEventListener(glScene.getObjectByName( "TERRA", true ), 'dblclick',  function(event) {
 		if (selectedTarget !== event.target) {
 			cameraFocusCallBack(event,function() {
 				toggleBuildMenu(planet);
@@ -192,38 +192,44 @@ function addStation(race,station) {
     require(["../objects/"+race+"/" +station + "/" + station], function() {
         THREEx.Ships.probe(function(geometry,material) {
 
-            var parent = new THREE.Object3D();
+            var station = new THREE.Object3D();
 
             var materials = new THREE.MeshFaceMaterial(material);
 
-            var station = new THREE.Mesh( geometry, materials);
+            var stationMesh = new THREE.Mesh( geometry, materials);
 
-            station.scale.multiplyScalar(1/1024);
-            station.castShadow = true;
-            station.receiveShadow  = true;
+            stationMesh.scale.multiplyScalar(1/1024);
+            stationMesh.castShadow = true;
+            stationMesh.receiveShadow  = true;
 
-            station.name = "probe";
+            stationMesh.name = "probe";
 
-            parent.rotation.z = (planets[0].stations.length * 2) * Math.PI / 12;
+            station.rotation.z = (planets[0].stations.length * 2) * Math.PI / 12;
 
-            station.position.y = (planets[0].size / 2) + 3 + (Math.random() * 2);
+            stationMesh.position.y = (planets[0].size / 2) + 3 + (Math.random() * 2);
             //station.position.x = 3 + (Math.random() * 2);
 
-            parent.add(station);
+            station.add(stationMesh);
 
             geometry = new THREE.Geometry();
             geometry.vertices.push(new THREE.Vector3(0,0,0));
-            geometry.vertices.push(station.position);
+            geometry.vertices.push(stationMesh.position);
 
             var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0x0066FF} ) );
-            parent.add( line );
-            planets[0].add( parent );
+            station.add( line );
+            planets[0].add( station );
 
-            onRenderFcts.push(function(){
-                parent.rotation.z += (0.01 * planets[0].gravity);
+            onRenderFcts.push(function() {
+                station.rotation.z += (0.01 * planets[0].gravity);
             });
 
-            planets[0].stations.push(parent);
+            planets[0].stations.push(station);
+            groupSelection.addObject(stationMesh,function() {
+                //set selected
+                console.log("fuck");
+                this.object.material = new THREE.MeshPhongMaterial({color:0xD2D2FF, specular:0x333333, shininess:60,
+                    opacity:0.5,shading:THREE.SmoothShading});
+            });
         });
     });
 }
@@ -235,7 +241,7 @@ var radius   = 80,
 
 // Remove center vertex
 geometry.vertices.shift();
-glscene.add( new THREE.Line( geometry, material ) );
+glScene.add( new THREE.Line( geometry, material ) );
 
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -256,7 +262,7 @@ resizeHandler();
 // render the glscene
 onRenderFcts.push(function(delta, now){
 	cssrenderer.render( cssScene, camera);
-	renderer.render( glscene, camera);
+	renderer.render( glScene, camera);
     if (rendererStats)
         rendererStats.update(renderer);
 });
