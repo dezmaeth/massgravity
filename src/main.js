@@ -57,9 +57,9 @@ var groupSelection = new THREEx.GroupSelection(camera);
 var toggleBuildMenu = function(planet) {
 	var buildMenuHTML = document.getElementById("buildMenu");
 	var heading = document.getElementById("headTitle");
-	var testBtn = document.getElementById("testBtn");
+	//var testBtn = document.getElementById("testBtn");
 	buildMenuHTML.style.display = "block";
-    heading.innerHTML = planet.name;
+    heading.innerHTML = planet.label;
     // @todo : add circle on planet
     var radius   = 5,
         segments = 64,
@@ -73,7 +73,7 @@ var toggleBuildMenu = function(planet) {
     planet.add(outline);
 
 
-	testBtn.onclick = function () { addStation("terran","probe"); };
+	//testBtn.onclick = function () { addStation("terran","probe"); };
 };
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -163,7 +163,7 @@ require(["../objects/terra/terra"],function() {
     planet.stations = [];
     planet.gravity = 0.1;
     planet.size = planet_size;
-
+    planet.label = "TERRA";
 
 	/////////////////////////////////
 	// ADD EARTH TO SCENE
