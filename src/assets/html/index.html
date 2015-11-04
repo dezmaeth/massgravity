@@ -5,7 +5,111 @@
 		<link rel="stylesheet" type="text/css" href="css/massgravity.css" />
 	</head>
 	<body>
-		<div id="buildMenu">
+        <!-- preloading fonts to avoid lag (this is temporary, fix with javascript later) -->
+        <div class="font_preload" style="opacity: 0">
+            <span style="font-family: 'profontwindowsregular'"></span>
+        </div>
+
+
+
+        <div class="right_ui" id="buildMenu">
+            
+            <section class="basic selected planet">
+
+                <div class="details row">
+                    <div class="picture size-2">
+                        <img src="../img/PT_test.png">
+                    </div>
+                    <div class="info size-2">
+
+                        <!-- objects name -->
+                        <h2 class="heading" id="headTitle">fuckland</h2>
+
+                        <!-- population bar, apply only on planets, moons, asteroids, stations and large ships -->
+                        <div class="progress_bar population">
+                            <span style="width:25%"></span>
+                            <p>low</p>
+                        </div>
+
+                        <!-- resources bar, apply only on planets,moons, asteroids -->
+                        <div class="progress_bar resources">
+                            <span style="width:45%"></span>
+                            <p>medium</p>
+                        </div>
+
+                        <p class="info_data">size: <b>13945kmr</b></p>
+
+                        <p class="info_data">moons: <b>0</b></p>
+                    </div>
+                </div>
+
+                <hr/>
+
+                <div class="builder row">
+                    
+                    <ul class="tabs">
+                        <li>
+                            <input type="radio" name="tabs" id="tab1" />
+                            <label for="tab1" class="ship">ships</label>
+                            <div id="tab-content1" class="tab-content">
+                              <p>Nothing here</p>
+                            </div>
+                        </li>
+                      
+                        <li>
+                            <input type="radio" name="tabs" id="tab2" />
+                            <label for="tab2" class="building">buildings</label>
+                            <div id="tab-content2" class="tab-content">
+                              <p>Nothing here</p>
+                            </div>
+                        </li>
+
+                        <li>
+                            <input type="radio" name="tabs" id="tab3" checked />
+                            <label for="tab3" class="station">Stations</label>
+                            <div id="tab-content3" class="tab-content">
+                              <ul class="build_list">
+                                <li><a class="button add" value="add station (bonjour)">
+                                    <img src="../img/PT_test.png">
+                                    <h6>Defense station</h6>
+                                    <p class="cost">
+                                        <span class="pop">100</span>
+                                        <span class="mat">20</span>
+                                    </p>
+
+                                </a></li>
+                                <li><a class="button add" value="add station (bonjour)">
+                                    <img src="../img/PT_test.png">
+                                    <h6>Defense station</h6>
+                                    <p class="cost">
+                                        <span class="pop">250</span>
+                                        <span class="mat">100</span>
+                                    </p>
+                                </a></li>
+                              </ul>
+                            </div>
+                        </li>
+
+                        <li>
+                            <input type="radio" name="tabs" id="tab4" />
+                            <label for="tab4" class="moon">moons</label>
+                            <div id="tab-content4" class="tab-content">
+                              <p>Nothing here</p>
+                            </div>
+                        </li>
+                    </ul>
+                    
+
+                </div>
+            
+            </section>
+        </div>
+
+
+
+
+
+		<!-- <div id="buildMenu">
 			<div class="stats">
                 <h2 class="heading" id="headTitle"></h2>
                 <div class="population">
@@ -25,7 +129,7 @@
                 </div>
 
             </div>
-		</div>
+		</div> -->
 
 		<!--<div id="menuoverlay">
 			<h2>Mass Gravity Project Pre-Alpha v0.1</h2>

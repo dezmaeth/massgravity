@@ -60,6 +60,8 @@ module.exports = function(grunt) {
           {expand: true, cwd: 'src/assets', src: ['video/**'], dest: 'dist/'},
           {expand: true, cwd: 'src/assets', src: ['objects/**'], dest: 'dist/'},
           {expand: true, cwd: 'src/assets', src: ['music/**'], dest: 'dist/'},
+          {expand: true, cwd: 'src/assets', src: ['img/**'], dest: 'dist/'},
+          {expand: true, cwd: 'src/assets/less', src: ['fonts/**'], dest: 'dist/css/'},
         ]
       }
     },
