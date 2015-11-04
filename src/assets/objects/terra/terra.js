@@ -3,25 +3,25 @@ var THREEx = THREEx || {};
 THREEx.Planets	= {};
 
 THREEx.Planets.baseURL	= '../objects/';
-THREEx.Planets.Earth = {};
+THREEx.Planets.Terra = {};
 
 
-THREEx.Planets.Earth.create	= function(size){
+THREEx.Planets.Terra.create	= function(size){
 
 	var containerEarth	= new THREE.Object3D();
 	var geometry	= new THREE.SphereGeometry(size, 32, 32);
 	var material	= new THREE.MeshPhongMaterial({
 		overdraw: true,
-		map			: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/earthmap1k.jpg'),
-		bumpMap		: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/earthbump1k.jpg'),
+		map			: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'terra/images/earthmap1k.jpg'),
+		bumpMap		: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'terra/images/earthbump1k.jpg'),
 		bumpScale	: 0.01,
-		specularMap	: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/earthspec1k.jpg'),
+		specularMap	: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'terra/images/earthspec1k.jpg'),
 		shininess  : 15,
 		specular	: new THREE.Color('grey')
 	});
 
 	var earthMesh	= new THREE.Mesh(geometry, material);
-	earthMesh.name = "EARTH";
+	earthMesh.name = "TERRA";
 	containerEarth.add(earthMesh);
 	earthMesh.castShadow = true;
 	earthMesh.receiveShadow = true;
@@ -46,7 +46,7 @@ THREEx.Planets.Earth.create	= function(size){
 	atmosphereMeshGlow.scale.multiplyScalar(1.15);
 	containerEarth.add( atmosphereMeshGlow );
 
-	var cloudMesh	= THREEx.Planets.Earth.clouds(size);
+	var cloudMesh	= THREEx.Planets.Terra.clouds(size);
 	cloudMesh.receiveShadow = true;
 	containerEarth.add(cloudMesh);
 
@@ -60,16 +60,25 @@ THREEx.Planets.Earth.create	= function(size){
 
 
 
-THREEx.Planets.Earth.label = function() {
+THREEx.Planets.Terra.label = function() {
 	var label = document.createElement( 'div' );
 	label.className = "label";
 	label.innerHTML = "Terra </br> (Homeworld)";
 	return new THREE.CSS3DObject( label );
 };
+/*
+var radius   = 80,
+    segments = 64,
+    material = new THREE.LineBasicMaterial( { color: 0xFF9900, opacity: 0.5 } ),
+    geometry = new THREE.CircleGeometry( radius, segments );
+
+// Remove center vertex
+geometry.vertices.shift();
+glscene.add( new THREE.Line( geometry, material ) );
+*/
 
 
-
-THREEx.Planets.Earth.clouds	= function(size){
+THREEx.Planets.Terra.clouds	= function(size){
 	// create destination canvas
 	var canvasResult	= document.createElement('canvas');
 	canvasResult.width	= 1024;
@@ -112,9 +121,9 @@ THREEx.Planets.Earth.clouds	= function(size){
 			contextResult.putImageData(dataResult,0,0)	
 			material.map.needsUpdate = true;
 		});
-		imageTrans.src	= THREEx.Planets.baseURL+'earth/images/earthcloudmaptrans.jpg';
+		imageTrans.src	= THREEx.Planets.baseURL+'terra/images/earthcloudmaptrans.jpg';
 	}, false);
-	imageMap.src	= THREEx.Planets.baseURL+'earth/images/earthcloudmap.jpg';
+	imageMap.src	= THREEx.Planets.baseURL+'terra/images/earthcloudmap.jpg';
 
 	var geometry	= new THREE.SphereGeometry(size * 1.02, 32, 32)
 	var material	= new THREE.MeshPhongMaterial({

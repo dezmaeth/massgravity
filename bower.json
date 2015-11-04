@@ -18,6 +18,7 @@
   ],
   "dependencies": {
     "three.js": "0.71.0",
-    "requirejs": "2.1.20"
+    "requirejs": "2.1.20",
+    "threex.rendererstats": "https://github.com/jeromeetienne/threex.rendererstats/archive/master.zip"
   }
 }
