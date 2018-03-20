@@ -1,4 +1,4 @@
-var THREEx = THREEx || {};
+let THREEx = THREEx || {};
 
 THREEx.Planets	= {};
 
@@ -8,9 +8,9 @@ THREEx.Planets.Earth = {};
 
 THREEx.Planets.Earth.create	= function(size){
 
-	var containerEarth	= new THREE.Object3D();
-	var geometry	= new THREE.SphereGeometry(size, 32, 32);
-	var material	= new THREE.MeshPhongMaterial({
+	let containerEarth	= new THREE.Object3D();
+	let geometry	= new THREE.SphereGeometry(size, 32, 32);
+	let material	= new THREE.MeshPhongMaterial({
 		overdraw: true,
 		map			: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/earthmap1k.jpg'),
 		bumpMap		: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/earthbump1k.jpg'),
@@ -20,7 +20,7 @@ THREEx.Planets.Earth.create	= function(size){
 		specular	: new THREE.Color('grey')
 	});
 
-	var earthMesh	= new THREE.Mesh(geometry, material);
+	let earthMesh	= new THREE.Mesh(geometry, material);
 	earthMesh.name = "EARTH";
 	containerEarth.add(earthMesh);
 	earthMesh.castShadow = true;
@@ -31,7 +31,7 @@ THREEx.Planets.Earth.create	= function(size){
 	material.uniforms.glowColor.value.set(0x00b3ff);
 	material.uniforms.coeficient.value	= 0.8;
 	material.uniforms.power.value		= 2.0;
-	var atmosphereMesh	= new THREE.Mesh(geometry, material );
+	let atmosphereMesh	= new THREE.Mesh(geometry, material );
 	atmosphereMesh.scale.multiplyScalar(1.01);
 	atmosphereMesh.receiveShadow = true;
 	containerEarth.add( atmosphereMesh );
@@ -42,15 +42,15 @@ THREEx.Planets.Earth.create	= function(size){
 	material.uniforms.glowColor.value.set(0x00b3ff);
 	material.uniforms.coeficient.value	= 0.4;
 	material.uniforms.power.value		= 4.0;
-	var atmosphereMeshGlow	= new THREE.Mesh(geometry, material );
+	let atmosphereMeshGlow	= new THREE.Mesh(geometry, material );
 	atmosphereMeshGlow.scale.multiplyScalar(1.15);
 	containerEarth.add( atmosphereMeshGlow );
 
-	var cloudMesh	= THREEx.Planets.Earth.clouds(size);
+	let cloudMesh	= THREEx.Planets.Earth.clouds(size);
 	cloudMesh.receiveShadow = true;
 	containerEarth.add(cloudMesh);
 
-	var moonMesh	= THREEx.Planets.Earth.moon();
+	let moonMesh	= THREEx.Planets.Earth.moon();
 	moonMesh.scale.multiplyScalar(1/2);
 	moonMesh.castShadow	= false;
     moonMesh.receiveShadow = true;
@@ -76,7 +76,7 @@ THREEx.Planets.Earth.create	= function(size){
 
 
 THREEx.Planets.Earth.label = function() {
-	var label = document.createElement( 'div' );
+	let label = document.createElement( 'div' );
 	label.className = "label";
 	label.innerHTML = "Terra </br> (Homeworld)";
 	return new THREE.CSS3DObject( label );
@@ -86,37 +86,37 @@ THREEx.Planets.Earth.label = function() {
 
 THREEx.Planets.Earth.clouds	= function(size){
 	// create destination canvas
-	var canvasResult	= document.createElement('canvas');
+	let canvasResult	= document.createElement('canvas');
 	canvasResult.width	= 1024;
 	canvasResult.height	= 512;
-	var contextResult	= canvasResult.getContext('2d');
+	let contextResult	= canvasResult.getContext('2d');
 
 	// load earthcloudmap
-	var imageMap	= new Image();
+	let imageMap	= new Image();
 	imageMap.addEventListener("load", function() {
 		
 		// create dataMap ImageData for earthcloudmap
-		var canvasMap	= document.createElement('canvas');
+		let canvasMap	= document.createElement('canvas');
 		canvasMap.width	= imageMap.width;
 		canvasMap.height= imageMap.height;
-		var contextMap	= canvasMap.getContext('2d');
+		let contextMap	= canvasMap.getContext('2d');
 		contextMap.drawImage(imageMap, 0, 0);
-		var dataMap	= contextMap.getImageData(0, 0, canvasMap.width, canvasMap.height);
+		let dataMap	= contextMap.getImageData(0, 0, canvasMap.width, canvasMap.height);
 
 		// load earthcloudmaptrans
-		var imageTrans	= new Image();
+		let imageTrans	= new Image();
 		imageTrans.addEventListener("load", function(){
 			// create dataTrans ImageData for earthcloudmaptrans
-			var canvasTrans		= document.createElement('canvas');
+			let canvasTrans		= document.createElement('canvas');
 			canvasTrans.width	= imageTrans.width;
 			canvasTrans.height	= imageTrans.height;
-			var contextTrans	= canvasTrans.getContext('2d');
+			let contextTrans	= canvasTrans.getContext('2d');
 			contextTrans.drawImage(imageTrans, 0, 0);
-			var dataTrans		= contextTrans.getImageData(0, 0, canvasTrans.width, canvasTrans.height);
+			let dataTrans		= contextTrans.getImageData(0, 0, canvasTrans.width, canvasTrans.height);
 			// merge dataMap + dataTrans into dataResult
-			var dataResult		= contextMap.createImageData(canvasMap.width, canvasMap.height);
-			for(var y = 0, offset = 0; y < imageMap.height; y++){
-				for(var x = 0; x < imageMap.width; x++, offset += 4){
+			let dataResult		= contextMap.createImageData(canvasMap.width, canvasMap.height);
+			for(let y = 0, offset = 0; y < imageMap.height; y++){
+				for(let x = 0; x < imageMap.width; x++, offset += 4){
 					dataResult.data[offset+0]	= dataMap.data[offset+0];
 					dataResult.data[offset+1]	= dataMap.data[offset+1];
 					dataResult.data[offset+2]	= dataMap.data[offset+2];
@@ -131,8 +131,8 @@ THREEx.Planets.Earth.clouds	= function(size){
 	}, false);
 	imageMap.src	= THREEx.Planets.baseURL+'earth/images/earthcloudmap.jpg';
 
-	var geometry	= new THREE.SphereGeometry(size * 1.02, 32, 32)
-	var material	= new THREE.MeshPhongMaterial({
+	let geometry	= new THREE.SphereGeometry(size * 1.02, 32, 32)
+	let material	= new THREE.MeshPhongMaterial({
 		overdraw: true,
 		map		: new THREE.Texture(canvasResult),
 		side		: THREE.DoubleSide,
@@ -144,8 +144,8 @@ THREEx.Planets.Earth.clouds	= function(size){
 };
 
 THREEx.Planets.Earth.moon = function() {
-	var geometry	= new THREE.SphereGeometry(0.5, 32, 32);
-	var material	= new THREE.MeshPhongMaterial({
+	let geometry	= new THREE.SphereGeometry(0.5, 32, 32);
+	let material	= new THREE.MeshPhongMaterial({
 		overdraw: true,
 		map			: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/moonmap1k.jpg'),
 		bumpMap		: THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'earth/images/moonbump1k.jpg'),

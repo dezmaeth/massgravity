@@ -1,16 +1,16 @@
-var THREEx = THREEx || {};
+let THREEx = THREEx || {};
 
 THREEx.Planets = THREEx.Planets || {};
 
 THREEx.Planets.baseURL	= '../objects/'
 
 THREEx.Planets.createStarBox = function() {
-    var uniforms ={ "tCube": { type: "t", value: null },
+    let uniforms ={ "tCube": { type: "t", value: null },
       "tFlip": { type: "f", value: -1 } };
 
-    var vertexShader = [
+    let vertexShader = [
 
-      "varying vec3 vWorldPosition;",
+      "letying vec3 vWorldPosition;",
 
       THREE.ShaderChunk[ "logdepthbuf_pars_vertex" ],
 
@@ -27,10 +27,10 @@ THREEx.Planets.createStarBox = function() {
 
     ].join("\n");
 
-    var fragmentShader = [
+    let fragmentShader = [
       "uniform samplerCube tCube;",
       "uniform float tFlip;",
-      "varying vec3 vWorldPosition;",
+      "letying vec3 vWorldPosition;",
 
       THREE.ShaderChunk[ "logdepthbuf_pars_fragment" ],
 
@@ -44,16 +44,16 @@ THREEx.Planets.createStarBox = function() {
 
     ].join("\n");
 
-  var urlPrefix = THREEx.Planets.baseURL + "skybox/empty_space/";
-  var urls = [ urlPrefix + "m_RT.jpg", urlPrefix + "m_LF.jpg",
+  let urlPrefix = THREEx.Planets.baseURL + "skybox/empty_space/";
+  let urls = [ urlPrefix + "m_RT.jpg", urlPrefix + "m_LF.jpg",
       urlPrefix + "m_UP.jpg", urlPrefix + "m_DN.jpg",
       urlPrefix + "m_FT.jpg", urlPrefix + "m_BK.jpg" ];
 
-  var textureCube	= THREE.ImageUtils.loadTextureCube( urls );
+  let textureCube	= THREE.ImageUtils.loadTextureCube( urls );
   textureCube.format = THREE.RGBFormat;
   uniforms["tCube"].value = textureCube;
 
-  var skyMaterial = new THREE.ShaderMaterial({
+  let skyMaterial = new THREE.ShaderMaterial({
     fragmentShader: fragmentShader,
     vertexShader: vertexShader,
     uniforms: uniforms,
@@ -61,7 +61,7 @@ THREEx.Planets.createStarBox = function() {
     side: THREE.BackSide
   });
 
-  var skyBox = new THREE.Mesh(new THREE.BoxGeometry(750,750,750), skyMaterial);
+  let skyBox = new THREE.Mesh(new THREE.BoxGeometry(750,750,750), skyMaterial);
   skyMaterial.frustumCulled = false;
   return skyBox;
 };

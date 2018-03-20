@@ -1,4 +1,4 @@
-## MASS GRAVITY PRE-ALPHA 0.1
+## MASS GRAVITY PRE-ALPHA 0.1.1
 
 ## Screenshot
 [![screenshot](artwork/planet2-01.jpg?raw=true)](http://mass-gravity.appspot.com)

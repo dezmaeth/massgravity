@@ -1,4 +1,4 @@
-var THREEx = THREEx || {};
+let THREEx = THREEx || {};
 
 THREEx.Planets	= {}
 
@@ -6,7 +6,7 @@ THREEx.Planets.baseURL	= '../objects/';
 
 
 THREEx.createAtmosphereMaterial	= function(){
-	var vertexShader	= [
+	let vertexShader	= [
 		'varying vec3 vNormal;',
 		'void main(){',
 		'	// compute intensity',
@@ -15,12 +15,12 @@ THREEx.createAtmosphereMaterial	= function(){
 		'	gl_Position	= projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
 		'}',
 	].join('\n')
-	var fragmentShader	= [
+	let fragmentShader	= [
 		'uniform float coeficient;',
 		'uniform float power;',
 		'uniform vec3  glowColor;',
 
-		'varying vec3  vNormal;',
+		'letying vec3  vNormal;',
 
 		'void main(){',
 		'	float intensity	= pow( coeficient - dot(vNormal, vec3(0.0, 0.0, 1.0)), power );',
@@ -30,7 +30,7 @@ THREEx.createAtmosphereMaterial	= function(){
 
 	// create custom material from the shader code above
 	//   that is within specially labeled script tags
-	var material	= new THREE.ShaderMaterial({
+	let material	= new THREE.ShaderMaterial({
 		uniforms: { 
 			coeficient	: {
 				type	: "f", 
@@ -58,36 +58,36 @@ THREEx.createAtmosphereMaterial	= function(){
 
 THREEx.Planets.sunLabel = function() {
 
-	var label = document.createElement( 'div' );
+	let label = document.createElement( 'div' );
 	label.className = "label";
 	label.innerHTML = "Sun (life bringer)";
-	var object = new THREE.CSS3DObject( label );
+	let object = new THREE.CSS3DObject( label );
 	
 	return object;
 
 };
 
 THREEx.Planets.makeSun 	= function(name){
-	var sunContainer = new THREE.Object3D();
-	var diameter = 5;	
+	let sunContainer = new THREE.Object3D();
+	let diameter = 5;
 
-	var geometry	= new THREE.SphereGeometry(diameter + 0.1 , 32, 32)
+	let geometry	= new THREE.SphereGeometry(diameter + 0.1 , 32, 32)
 	
-	var material	= THREEx.createAtmosphereMaterial()
+	let material	= THREEx.createAtmosphereMaterial()
 	material.uniforms.glowColor.value.set(0xFFC65C)
 	material.uniforms.coeficient.value	= 0.5
 	material.uniforms.power.value		= 2.0
-	var mesh 		= new THREE.Mesh(geometry, material );
+	let mesh 		= new THREE.Mesh(geometry, material );
 	mesh.name = name;
 	mesh.scale.multiplyScalar(1.01);
 
-	var geometry	= new THREE.SphereGeometry(diameter + 0.1 , 32, 32)
-	var material	= THREEx.createAtmosphereMaterial()
+	let geometry	= new THREE.SphereGeometry(diameter + 0.1 , 32, 32)
+	let material	= THREEx.createAtmosphereMaterial()
 	material.side	= THREE.BackSide
 	material.uniforms.glowColor.value.set(0xFFC65C)
 	material.uniforms.coeficient.value	= 0.4
 	material.uniforms.power.value		= 4.0
-	var sunGlow		= new THREE.Mesh(geometry, material );
+	let sunGlow		= new THREE.Mesh(geometry, material );
 	sunGlow.scale.multiplyScalar(1.15);
 	mesh.add( sunGlow );
 
@@ -98,10 +98,10 @@ THREEx.Planets.makeSun 	= function(name){
 	
 	 function lensFlareUpdateCallback( object ) {
 
-				var f, fl = object.lensFlares.length;
-				var flare;
-				var vecX = -object.positionScreen.x * 2;
-				var vecY = -object.positionScreen.y * 2;
+				let f, fl = object.lensFlares.length;
+				let flare;
+				let vecX = -object.positionScreen.x * 2;
+				let vecY = -object.positionScreen.y * 2;
 
 
 				for( f = 0; f < fl; f++ ) {
@@ -121,15 +121,15 @@ THREEx.Planets.makeSun 	= function(name){
 	}
 
 
-	var textureFlare0 = THREE.ImageUtils.loadTexture( THREEx.Planets.baseURL+ "sun/images/lensflare0.png" );
-	var textureFlare2 = THREE.ImageUtils.loadTexture( THREEx.Planets.baseURL+ "sun/images/lensflare2.png" );
-	var textureFlare3 = THREE.ImageUtils.loadTexture( THREEx.Planets.baseURL+ "sun/images/lensflare3.png" );
+	let textureFlare0 = THREE.ImageUtils.loadTexture( THREEx.Planets.baseURL+ "sun/images/lensflare0.png" );
+	let textureFlare2 = THREE.ImageUtils.loadTexture( THREEx.Planets.baseURL+ "sun/images/lensflare2.png" );
+	let textureFlare3 = THREE.ImageUtils.loadTexture( THREEx.Planets.baseURL+ "sun/images/lensflare3.png" );
 
 
-	var flareColor = new THREE.Color( 0xffffff );
+	let flareColor = new THREE.Color( 0xffffff );
 	flareColor.setHSL(0.55, 0.9, 0.5+ 0.5 );
 
-	var lensFlare = new THREE.LensFlare( textureFlare0, 700, 0.0, THREE.AdditiveBlending, flareColor );
+	let lensFlare = new THREE.LensFlare( textureFlare0, 700, 0.0, THREE.AdditiveBlending, flareColor );
 
 	lensFlare.add( textureFlare2, 512, 0.0, THREE.AdditiveBlending );
 	lensFlare.add( textureFlare2, 512, 0.0, THREE.AdditiveBlending );
@@ -147,7 +147,7 @@ THREEx.Planets.makeSun 	= function(name){
 	
 	sunContainer.add( mesh );
 
-	var light	= new THREE.PointLight( 0xffffff, 1 , 0 );
+	let light	= new THREE.PointLight( 0xffffff, 1 , 0 );
 	light.position.set(0,0,0);
 	light.castShadow	= true;
 	light.shadowCameraNear	= 0.01;

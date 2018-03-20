@@ -4,20 +4,19 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 // init renderer
-
-var cssrenderer = new THREE.CSS3DRenderer();
+let cssrenderer = new THREE.CSS3DRenderer();
 cssrenderer.setSize( window.innerWidth, window.innerHeight );
 cssrenderer.domElement.style.position = 'absolute';
 cssrenderer.domElement.className = "cssworld";
 document.body.appendChild( cssrenderer.domElement );
 
 if (window.WebGLRenderingContext) {
-	var renderer = new THREE.WebGLRenderer({
+	let renderer = new THREE.WebGLRenderer({
 		antialias	: true,
 		alpha: true
 	});
 } else {
-	var renderer = new THREE.CanvasRenderer({ wireframe: false });
+	let renderer = new THREE.CanvasRenderer({ wireframe: false });
 }
 renderer.setClearColor(new THREE.Color(0x000000), 1)
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -26,30 +25,30 @@ document.body.appendChild( renderer.domElement );
 
 
 // array of functions for the rendering loop
-var onRenderFcts= [];
+let onRenderFcts= [];
 
 // init glscene and camera
-var glscene	= new THREE.Scene();
-var cssScene	= new THREE.Scene();
-var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);	
-var controls	= new THREE.OrbitControls(camera);
+let glscene	= new THREE.Scene();
+let cssScene	= new THREE.Scene();
+let camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
+let controls	= new THREE.OrbitControls(camera);
 //controls.noPan = true;
 //controls.noZoom = true;
 //controls.noZoom = true;
-var selectedTarget = false;
+let selectedTarget = false;
 
 //////////////////////////////////////////////////////////////////////////////////
 //		init dom events
 //////////////////////////////////////////////////////////////////////////////////
 
-var domEvents	= new THREEx.DomEvents(camera, renderer.domElement);
+let domEvents	= new THREEx.DomEvents(camera, renderer.domElement);
 
 //////////////////////////////////////////////////////////////////////////////////
 //		Camera Focus
 //////////////////////////////////////////////////////////////////////////////////
 
-var cameraFocusCallBack = function(object) {
-	var destination;
+let cameraFocusCallBack = function(object) {
+	let destination;
 	if (object instanceof(THREE.Vector3)) {
 
 		destination = object;
@@ -60,10 +59,10 @@ var cameraFocusCallBack = function(object) {
 
 		selectedObject = object.target;
 		
-		var vector = new THREE.Vector3();
+		let vector = new THREE.Vector3();
 		vector.setFromMatrixPosition( object.target.matrixWorld );
 		destination =  vector.clone();
-		var separation = object.target.geometry.boundingSphere.radius;
+		let separation = object.target.geometry.boundingSphere.radius;
 		controls.target = vector;
 	}
 	
@@ -83,7 +82,7 @@ var cameraFocusCallBack = function(object) {
 //////////////////////////////////////////////////////////////////////////////////
 
 require(["../objects/skybox/skybox"], function() { 
-	var skybox = THREEx.Planets.createStarBox();
+	let skybox = THREEx.Planets.createStarBox();
 	glscene.add(skybox);
 });
 
@@ -92,9 +91,9 @@ require(["../objects/skybox/skybox"], function() {
 //		Agregar Sol
 //////////////////////////////////////////////////////////////////////////////////
 require(["../objects/sun/sun"],function() {
-	var objPos = { x:0 , y:0 , z: 0};
+	let objPos = { x:0 , y:0 , z: 0};
 
-	var sunObject = THREEx.Planets.makeSun("sun_1");
+	let sunObject = THREEx.Planets.makeSun("sun_1");
 	sunObject.position.set(objPos.x,objPos.y,objPos.z);
 	glscene.add(sunObject);
 
@@ -105,13 +104,13 @@ require(["../objects/sun/sun"],function() {
 	//	SUN LABEL
 	//////////////////////
 
-	var sunLabel = THREEx.Planets.sunLabel();
+	let sunLabel = THREEx.Planets.sunLabel();
 	sunLabel.scale.multiplyScalar(1/128);
 	sunLabel.position.set(sunObject.position.x + 10 , sunObject.position.y, sunObject.position.z);
 
 
     sunLabel.onRender = function() {
-        var distanceToCamera = camera.position.distanceTo(sunObject.position);
+        let distanceToCamera = camera.position.distanceTo(sunObject.position);
         sunLabel.element.style.opacity = (100 - distanceToCamera) / 100;
     };
 	cssScene.add(sunLabel);
@@ -133,21 +132,21 @@ require(["../objects/sun/sun"],function() {
 //		Agregar Planeta
 //////////////////////////////////////////////////////////////////////////////////
 require(["../objects/earth/earth"],function() {
-	var earthDist = { x:50 , y:40 , z: 0};
-	var containerEarth	= THREEx.Planets.Earth.create(4);
+	let earthDist = { x:50 , y:40 , z: 0};
+	let containerEarth	= THREEx.Planets.Earth.create(4);
 	containerEarth.position.set(earthDist.x,earthDist.y,earthDist.z);
 
 	//////////////////////
 	// EARTH LABEL
 	///////////////////////
-	var earthLabel =THREEx.Planets.Earth.label();
+	let earthLabel =THREEx.Planets.Earth.label();
     earthLabel.scale.multiplyScalar(1/128);
 	cssScene.add(earthLabel);
 
 	earthLabel.position.set(containerEarth.position.x + 7,containerEarth.position.y,containerEarth.position.z);
 
 	onRenderFcts.push(function(delta, now){
-		var distanceToCamera = camera.position.distanceTo(containerEarth.position);
+		let distanceToCamera = camera.position.distanceTo(containerEarth.position);
 		earthLabel.element.style.opacity = (100 - distanceToCamera) / 100;
 	});
 
@@ -173,9 +172,9 @@ require(["../objects/earth/earth"],function() {
 	//////////////////////////////////////////////////////////////////////////////////
 	require(["../objects/ships/probe/probeObject"], function() { 
 		THREEx.Ships.createTestShip(function(geometry,material) {
-			var materials = new THREE.MeshFaceMaterial(material);
+			let materials = new THREE.MeshFaceMaterial(material);
 
-			var probe = new THREE.Mesh( geometry, materials);
+			let probe = new THREE.Mesh( geometry, materials);
 
 			probe.scale.multiplyScalar(1/1024);
 			probe.castShadow = true;
@@ -188,11 +187,11 @@ require(["../objects/earth/earth"],function() {
 			probe.position.y = 39;
 			probe.position.z = 0;
 
-			var geometry = new THREE.Geometry();
+			let geometry = new THREE.Geometry();
 			geometry.vertices.push(containerEarth.position);
 			geometry.vertices.push(probe.position);
 
-			var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0x0066FF} ) );
+			let line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0x0066FF} ) );
 			glscene.add( line );
 		
 
@@ -209,17 +208,13 @@ require(["../objects/earth/earth"],function() {
 
 });
 
-function addStationToHome() {
-
-}
-
 
 //////////////////////////////////////////////////////////////////////////////////
 //		Layout maximun geometry
 //////////////////////////////////////////////////////////////////////////////////
 
 
-var radius   = 80,
+let radius   = 80,
     segments = 64,
     material = new THREE.LineBasicMaterial( { color: 0xFF9900, opacity: 0.5 } ),
     geometry = new THREE.CircleGeometry( radius, segments );
@@ -233,7 +228,7 @@ glscene.add( new THREE.Line( geometry, material ) );
 //		Start the show
 //////////////////////////////////////////////////////////////////////////////////
 
-var resizeHandler = function(event) {
+let resizeHandler = function(event) {
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	camera.aspect	= window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
@@ -250,11 +245,11 @@ onRenderFcts.push(function(delta, now){
 });
 
 // run the rendering loop
-var lastTimeMsec= null;
+let lastTimeMsec= null;
 requestAnimationFrame(function animate(nowMsec){
 	requestAnimationFrame( animate );
 	lastTimeMsec	= lastTimeMsec || nowMsec-1000/60;
-	var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec);
+	let deltaMsec	= Math.min(200, nowMsec - lastTimeMsec);
 	lastTimeMsec	= nowMsec;
 	TWEEN.update(nowMsec);
 	onRenderFcts.forEach(function(onRenderFct){
