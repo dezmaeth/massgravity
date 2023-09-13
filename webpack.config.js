@@ -1,22 +1,22 @@
-const webpack = require("webpack");
 const path = require('path');
-let HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
     devServer: {
         host: process.env.MG_SERVER_HOST,
         port: process.env.MG_SERVER_PORT,
-        disableHostCheck: true
+        allowedHosts: 'all',
     },
 
     devtool: 'source-map',
 
-    entry: [ './src/main-dev.js' ],
+    entry: './src/main-dev.js',
 
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: (process.env.MG_ENV === 'dev') ? "mg.debug.js" : "mg.[hash].min.js"
+        filename: (process.env.MG_ENV === 'dev') ? "mg.debug.js" : "mg.[contenthash].min.js"
     },
+
     plugins: [
         new HtmlWebpackPlugin({
             template: 'src/assets/html/index.html',
@@ -26,32 +26,40 @@ module.exports = {
             }
         }),
     ],
+
     module: {
-        loaders: [
+        rules: [
             {
                 test: /\.js$/,
                 exclude: /node_modules/,
-                loader: 'babel-loader',
-                options: {
-                    presets: ['es2017']
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        presets: ['@babel/preset-env'] // updated preset name
+                    }
                 }
             },
             {
                 test: /\.glsl$/,
-                loader: 'webpack-glsl'
+                use: 'webpack-glsl-loader' // if 'webpack-glsl' doesn't work, it might be named 'webpack-glsl-loader'. Please check.
             },
             {
                 test: /\.html$/,
-                loader: "html-loader",
-                options: {
-                    interpolate: true
+                use: {
+                    loader: "html-loader",
+                    options: {
+                        interpolate: true
+                    }
                 }
             },
             {
-                test: /\.scss/,
-                loaders: [
+                test: /\.scss$/,
+                use: [
                     'style-loader',
-                    'css-loader?importLoaders=1',
+                    {
+                        loader: 'css-loader',
+                        options: { importLoaders: 1 }
+                    },
                     'postcss-loader',
                     'sass-loader'
                 ]
