@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+        <div class="admin-sidebar-header">
+            <h3>Mass Gravity</h3>
+            <p>Admin Dashboard</p>
+        </div>
+        <ul class="admin-menu">
+            <li><a href="{{ url_for('admin.index') }}" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="{{ url_for('admin.settings') }}"><i class="fas fa-cog"></i> Game Settings</a></li>
+            <li><a href="{{ url_for('admin.users') }}"><i class="fas fa-users"></i> Manage Users</a></li>
+            <li><a href="{{ url_for('main.index') }}"><i class="fas fa-arrow-left"></i> Back to Site</a></li>
+        </ul>
+    </div>
+
+    <!-- Content -->
+    <div class="admin-content">
+        <div class="admin-content-header">
+            <h2>Dashboard</h2>
+            <p>Welcome to the Mass Gravity admin dashboard</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="admin-stats">
+            <div class="admin-stat-card primary">
+                <h3>Total Users</h3>
+                <div class="stat-value">{{ user_count }}</div>
+                <div class="stat-description">Registered players</div>
+            </div>
+            <div class="admin-stat-card success">
+                <h3>Active Game Worlds</h3>
+                <div class="stat-value">{{ active_users }}</div>
+                <div class="stat-description">Users with active game data</div>
+            </div>
+            <div class="admin-stat-card warning">
+                <h3>Mining Facilities</h3>
+                <div class="stat-value">{{ total_facilities }}</div>
+                <div class="stat-description">Total across all players</div>
+            </div>
+            <div class="admin-stat-card danger">
+                <h3>Total Planets</h3>
+                <div class="stat-value">{{ total_planets }}</div>
+                <div class="stat-description">In all game worlds</div>
+            </div>
+        </div>
+
+        <div class="admin-flex" style="gap: 25px;">
+            <!-- Game Settings Summary -->
+            <div class="admin-card" style="flex: 1;">
+                <div class="admin-card-header">
+                    <h3>Current Game Settings</h3>
+                    <a href="{{ url_for('admin.settings') }}" class="admin-btn admin-btn-sm admin-btn-primary">Edit</a>
+                </div>
+                <div class="admin-card-body">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Setting</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Initial Resources</td>
+                                <td>{{ settings.initial_resources }}</td>
+                            </tr>
+                            <tr>
+                                <td>Mining Rate</td>
+                                <td>{{ settings.mining_rate }} per facility</td>
+                            </tr>
+                            <tr>
+                                <td>Planets Per User</td>
+                                <td>{{ settings.min_planets }} to {{ settings.max_planets }}</td>
+                            </tr>
+                            <tr>
+                                <td>Mining Facility Cost</td>
+                                <td>{{ settings.mining_facility_cost }}</td>
+                            </tr>
+                            <tr>
+                                <td>Defense Facility Cost</td>
+                                <td>{{ settings.defense_facility_cost }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Resource Distribution Chart -->
+            <div class="admin-card" style="flex: 1;">
+                <div class="admin-card-header">
+                    <h3>Player Resource Distribution</h3>
+                </div>
+                <div class="admin-card-body">
+                    <div class="admin-chart-container">
+                        <canvas id="resourceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Users -->
+        <div class="admin-card admin-mt">
+            <div class="admin-card-header">
+                <h3>Recent Users</h3>
+                <a href="{{ url_for('admin.users') }}" class="admin-btn admin-btn-sm admin-btn-secondary">View All</a>
+            </div>
+            <div class="admin-card-body">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Resources</th>
+                            <th>Planets</th>
+                            <th>Facilities</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user_data in recent_users %}
+                        <tr>
+                            <td>{{ user_data.username }}</td>
+                            <td>{{ user_data.email }}</td>
+                            <td>{{ user_data.resources }}</td>
+                            <td>{{ user_data.planets }}</td>
+                            <td>{{ user_data.facilities }}</td>
+                            <td><span class="admin-badge admin-badge-{{ user_data.status_class }}">{{ user_data.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Sample data for player resource distribution
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('resourceChart').getContext('2d');
+        const resourceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ resource_labels|tojson }},
+                datasets: [{
+                    label: 'Player Resources',
+                    data: {{ resource_data|tojson }},
+                    backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Resources'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Players'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

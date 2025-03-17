@@ -30,10 +30,11 @@ module.exports = {
         loaders: [
             {
                 test: /\.js$/,
-                exclude: /node_modules/,
+                exclude: /node_modules\/(?!three)/,
                 loader: 'babel-loader',
                 options: {
-                    presets: ['es2017']
+                    presets: ['es2017'],
+                    plugins: ['transform-object-rest-spread']
                 }
             },
             {
