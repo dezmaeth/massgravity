@@ -429,8 +429,8 @@ class MassGravity {
     initScene() {
         this.updateLoadingProgress(70);
         
-        // Add ambient light
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        // Add ambient light with increased intensity
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
         this.scene.add(ambientLight);
         
         // Add a skybox

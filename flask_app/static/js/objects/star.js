@@ -29,7 +29,7 @@ export class Star {
             }
         };
 
-        this.createStar();
+        //this.createStar();
         this.createGlow();
         this.createLight();
 
@@ -72,7 +72,7 @@ export class Star {
         innerMaterial.uniforms.power.value = 2.0;
         
         const innerMesh = new THREE.Mesh(innerGeometry, innerMaterial);
-        innerMesh.scale.multiplyScalar(1.01);
+        innerMesh.scale.multiplyScalar(0.5);
         this.container.add(innerMesh);
         
         // Outer glow
@@ -94,8 +94,8 @@ export class Star {
     }
 
     createLight() {
-        // Add point light
-        const light = new THREE.PointLight(0xffffff, 1, 0);
+        // Add point light with increased intensity
+        const light = new THREE.PointLight(0xffffff, 2, 0);
         light.castShadow = true;
         
         // Set up shadow parameters
@@ -104,7 +104,12 @@ export class Star {
         light.shadow.camera.near = 0.01;
         light.shadow.camera.far = 500;
         
+        // Add a second light with no shadows to enhance illumination
+        const fillLight = new THREE.PointLight(0xffffcc, 0.5, 0);
+        fillLight.castShadow = false;
+        
         this.container.add(light);
+        this.container.add(fillLight);
     }
 
     animate(delta) {
