@@ -65,6 +65,23 @@
         background-clip: text;
         color: transparent;
         text-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
+        position: relative;
+        animation: logo-pulse 3s infinite ease-in-out;
+    }
+    
+    @keyframes logo-pulse {
+        0% {
+            text-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
+            transform: scale(1);
+        }
+        50% {
+            text-shadow: 0 0 25px rgba(0, 200, 255, 0.7);
+            transform: scale(1.02);
+        }
+        100% {
+            text-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
+            transform: scale(1);
+        }
     }
     
     .hero p {
@@ -106,18 +123,58 @@
         letter-spacing: 1px;
         box-shadow: 0 0 20px rgba(0, 100, 255, 0.3);
         text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+    }
+    
+    .btn::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, 
+            rgba(255, 255, 255, 0) 0%, 
+            rgba(255, 255, 255, 0.2) 50%, 
+            rgba(255, 255, 255, 0) 100%);
+        z-index: -1;
+        transition: all 0.6s ease;
     }
     
     .btn:hover {
         background-color: rgba(0, 100, 200, 0.7);
         border-color: rgba(0, 200, 255, 0.8);
-        transform: translateY(-3px);
-        box-shadow: 0 0 30px rgba(0, 150, 255, 0.5);
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 0 30px rgba(0, 150, 255, 0.7);
+    }
+    
+    .btn:hover::after {
+        left: 100%;
+    }
+    
+    .btn:active {
+        transform: translateY(1px) scale(0.98);
+        box-shadow: 0 0 15px rgba(0, 100, 255, 0.5);
     }
     
     .btn.play-btn {
         background-color: rgba(0, 150, 50, 0.7);
         border-color: rgba(0, 255, 100, 0.5);
+        animation: play-btn-pulse 2s infinite;
+    }
+    
+    @keyframes play-btn-pulse {
+        0% {
+            box-shadow: 0 0 20px rgba(0, 200, 100, 0.3);
+        }
+        50% {
+            box-shadow: 0 0 30px rgba(0, 255, 100, 0.6);
+        }
+        100% {
+            box-shadow: 0 0 20px rgba(0, 200, 100, 0.3);
+        }
     }
     
     .btn.play-btn:hover {
@@ -145,18 +202,77 @@
         transition: all 0.3s ease;
         backdrop-filter: blur(5px);
         box-shadow: 0 0 20px rgba(0, 50, 150, 0.2);
+        opacity: 0;
+        transform: translateY(20px);
+        animation: feature-card-appear 0.8s forwards;
+    }
+    
+    .feature-card:nth-child(1) { animation-delay: 0.3s; }
+    .feature-card:nth-child(2) { animation-delay: 0.5s; }
+    .feature-card:nth-child(3) { animation-delay: 0.7s; }
+    
+    @keyframes feature-card-appear {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
     .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0 25px rgba(0, 100, 255, 0.4);
-        border-color: rgba(0, 150, 255, 0.6);
+        transform: translateY(-5px) scale(1.03);
+        box-shadow: 0 0 25px rgba(0, 100, 255, 0.6);
+        border-color: rgba(0, 150, 255, 0.8);
+        z-index: 2;
     }
     
     .feature-icon {
         font-size: 3rem;
         margin-bottom: 1rem;
         color: #00ccff;
+        display: inline-block;
+        position: relative;
+        animation: icon-float 4s infinite ease-in-out;
+    }
+    
+    .feature-icon::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 60px;
+        height: 60px;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(circle, rgba(0, 204, 255, 0.3) 0%, rgba(0, 204, 255, 0) 70%);
+        border-radius: 50%;
+        z-index: -1;
+        animation: pulse-glow 3s infinite;
+    }
+    
+    @keyframes icon-float {
+        0% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+        100% {
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes pulse-glow {
+        0% {
+            opacity: 0.5;
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+        50% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+        100% {
+            opacity: 0.5;
+            transform: translate(-50%, -50%) scale(0.8);
+        }
     }
     
     .feature-title {
@@ -290,6 +406,169 @@
         }
     }
     
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 100;
+        overflow-y: auto;
+        backdrop-filter: blur(5px);
+        animation: modal-fade-in 0.3s ease-out;
+    }
+    
+    @keyframes modal-fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .modal-content {
+        background: rgba(0, 20, 40, 0.9);
+        margin: 5% auto;
+        width: 90%;
+        max-width: 600px;
+        border-radius: 10px;
+        box-shadow: 0 0 30px rgba(0, 150, 255, 0.5);
+        border: 1px solid rgba(0, 150, 255, 0.3);
+        animation: modal-slide-down 0.4s ease-out;
+        overflow: hidden;
+        transform: translateZ(0);
+    }
+    
+    @keyframes modal-slide-down {
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .modal-header {
+        padding: 1.5rem;
+        background: rgba(0, 30, 60, 0.9);
+        position: relative;
+        border-bottom: 1px solid rgba(0, 150, 255, 0.3);
+    }
+    
+    .modal-header h2 {
+        margin: 0;
+        color: #00ccff;
+        font-size: 1.8rem;
+        text-align: center;
+        font-family: 'Orbitron', sans-serif;
+        text-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+    }
+    
+    .close-modal {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        color: #fff;
+        font-size: 1.5rem;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(0, 100, 200, 0.3);
+        transition: all 0.3s;
+    }
+    
+    .close-modal:hover {
+        background: rgba(0, 150, 255, 0.5);
+        transform: scale(1.1);
+    }
+    
+    .modal-body {
+        padding: 2rem;
+    }
+    
+    .modal .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .modal label {
+        display: block;
+        margin-bottom: 0.7rem;
+        color: #00ccff;
+        font-weight: bold;
+    }
+    
+    .modal input[type="text"],
+    .modal input[type="email"],
+    .modal input[type="password"] {
+        width: 100%;
+        padding: 0.8rem;
+        border-radius: 5px;
+        border: 1px solid rgba(0, 150, 255, 0.5);
+        background: rgba(0, 10, 30, 0.8);
+        color: #fff;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+    
+    .modal input[type="text"]:focus,
+    .modal input[type="email"]:focus,
+    .modal input[type="password"]:focus {
+        border-color: rgba(0, 200, 255, 0.8);
+        outline: none;
+        box-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+    }
+    
+    .modal .form-actions {
+        margin-top: 2rem;
+        text-align: center;
+    }
+    
+    .modal .submit-btn {
+        background: linear-gradient(to bottom, rgba(0, 150, 60, 0.9), rgba(0, 100, 40, 0.9));
+        padding: 0.8rem 2rem;
+        font-size: 1.1rem;
+        min-width: 200px;
+    }
+    
+    .modal .submit-btn:hover {
+        background: linear-gradient(to bottom, rgba(0, 180, 80, 0.9), rgba(0, 130, 60, 0.9));
+    }
+    
+    /* Login modal styles */
+    .login-submit-btn {
+        background: linear-gradient(to bottom, rgba(0, 100, 180, 0.9), rgba(0, 60, 130, 0.9)) !important;
+    }
+    
+    .login-submit-btn:hover {
+        background: linear-gradient(to bottom, rgba(0, 120, 220, 0.9), rgba(0, 80, 180, 0.9)) !important;
+    }
+    
+    .modal .form-footer {
+        margin-top: 1.5rem;
+        text-align: center;
+        color: #a0d0ff;
+        font-size: 0.9rem;
+    }
+    
+    .modal .form-footer a {
+        color: #00ccff;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    
+    .modal .form-footer a:hover {
+        text-decoration: underline;
+    }
+    
+    /* Flash messages in modal */
+    .modal .flashes {
+        background: rgba(200, 30, 30, 0.5);
+        padding: 0.8rem;
+        border-radius: 5px;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(255, 100, 100, 0.5);
+    }
+    
     /* Responsive */
     @media (max-width: 768px) {
         .hero h1 {
@@ -309,17 +588,125 @@
             padding: 0.6rem 1.5rem;
             font-size: 1rem;
         }
+        
+        .modal-content {
+            width: 95%;
+            margin: 10% auto;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
     }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/space-animations.css') }}">
 {% endblock %}
 
 {% block content %}
 <!-- WebGL Background Canvas -->
 <canvas id="starmap-background"></canvas>
+<div class="twinkling-stars" id="twinkling-stars"></div>
+
+<!-- Background Music Player (hidden) -->
+<audio id="background-music" src="{{ url_for('static', filename='assets/music/home.mp3') }}" preload="auto" loop></audio>
 
 <!-- Main Content -->
+<!-- Registration Modal -->
+<div id="register-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Join the Cosmic Adventure</h2>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="{{ url_for('auth.register') }}" id="register-form">
+                <div class="form-group">
+                    <label for="reg-username">Commander Name</label>
+                    <input type="text" id="reg-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Communication Channel (Email)</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Access Code (Password)</label>
+                    <input type="password" id="reg-password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label>Select Your Faction</label>
+                    <div class="faction-selection">
+                        <div class="faction-option">
+                            <input type="radio" id="faction-blue" name="faction" value="blue" required>
+                            <label for="faction-blue" class="faction-label faction-blue">
+                                <span class="faction-color"></span>
+                                <span class="faction-name">Blue Faction</span>
+                                <span class="faction-desc">Specialists in energy technology. Access to rare blue materials.</span>
+                            </label>
+                        </div>
+                        <div class="faction-option">
+                            <input type="radio" id="faction-red" name="faction" value="red" required>
+                            <label for="faction-red" class="faction-label faction-red">
+                                <span class="faction-color"></span>
+                                <span class="faction-name">Red Faction</span>
+                                <span class="faction-desc">Masters of weapon systems. Access to rare red materials.</span>
+                            </label>
+                        </div>
+                        <div class="faction-option">
+                            <input type="radio" id="faction-green" name="faction" value="green" required>
+                            <label for="faction-green" class="faction-label faction-green">
+                                <span class="faction-color"></span>
+                                <span class="faction-name">Green Faction</span>
+                                <span class="faction-desc">Experts in shield technology. Access to rare green materials.</span>
+                            </label>
+                        </div>
+                    </div>
+                    <p class="faction-note">Note: Your faction choice is permanent and cannot be changed later.</p>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn submit-btn">
+                        <i class="fas fa-rocket"></i> Launch Your Career
+                    </button>
+                </div>
+                <div class="form-footer">
+                    <p>Already have an account? <a href="#" id="switch-to-login">Login</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Login Modal -->
+<div id="login-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Command Center Access</h2>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="{{ url_for('auth.login') }}" id="login-form">
+                <div class="form-group">
+                    <label for="login-username">Commander ID</label>
+                    <input type="text" id="login-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Access Code</label>
+                    <input type="password" id="login-password" name="password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn submit-btn login-submit-btn">
+                        <i class="fas fa-space-shuttle"></i> Enter Command Center
+                    </button>
+                </div>
+                <div class="form-footer">
+                    <p>Don't have an account? <a href="#" id="switch-to-register">Register</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="landing-page">
     <div class="hero">
         <h1>MASS GRAVITY</h1>
@@ -333,12 +720,12 @@
                 <i class="fas fa-rocket"></i> Launch Game
             </a>
             {% else %}
-            <a href="{{ url_for('auth.login') }}" class="btn login-btn">
+            <button type="button" class="btn login-btn" id="open-login-modal">
                 <i class="fas fa-sign-in-alt"></i> Login
-            </a>
-            <a href="{{ url_for('auth.register') }}" class="btn register-btn">
+            </button>
+            <button type="button" class="btn register-btn" id="open-register-modal">
                 <i class="fas fa-user-plus"></i> Register
-            </a>
+            </button>
             {% endif %}
         </div>
     </div>
@@ -409,9 +796,9 @@
                 <i class="fas fa-rocket"></i> Launch Game
             </a>
             {% else %}
-            <a href="{{ url_for('auth.register') }}" class="btn register-btn">
+            <button type="button" class="btn register-btn" id="open-register-modal-2">
                 <i class="fas fa-user-plus"></i> Create Account
-            </a>
+            </button>
             {% endif %}
         </div>
     </div>
@@ -419,9 +806,16 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Main Scripts -->
 <script>
-    // WebGL Starmap Background
-    document.addEventListener('DOMContentLoaded', function() {
+</script>
+
+<!-- WebGL Stars Background Script -->
+<script>
+    // This is now handled by the initBackgroundMusic function above
+
+    // Initialize WebGL Starmap Background
+    const initStarBackground = function() {
         const canvas = document.getElementById('starmap-background');
         const gl = canvas.getContext('webgl');
         
@@ -452,18 +846,25 @@
             uniform mat4 uModelViewMatrix;
             uniform mat4 uProjectionMatrix;
             uniform float uTime;
+            uniform mat4 uRotationMatrix;
             
             varying vec2 vTextureCoord;
             varying float vAlpha;
             
             void main() {
-                // Add subtle movement to stars
-                vec4 position = aVertexPosition;
-                position.x += sin(uTime * 0.001 + position.y * 0.1) * 0.1;
-                position.y += cos(uTime * 0.001 + position.x * 0.1) * 0.1;
+                // Apply slow rotation to the entire star field
+                vec4 rotatedPosition = uRotationMatrix * aVertexPosition;
                 
-                gl_Position = uProjectionMatrix * uModelViewMatrix * position;
-                gl_PointSize = aSize;
+                // Add subtle individual star movement
+                rotatedPosition.x += sin(uTime * 0.0001 + rotatedPosition.y * 0.05) * 0.02;
+                rotatedPosition.y += cos(uTime * 0.0001 + rotatedPosition.x * 0.05) * 0.02;
+                
+                gl_Position = uProjectionMatrix * uModelViewMatrix * rotatedPosition;
+                
+                // Adjust point size based on distance (further stars appear smaller)
+                float distance = length(rotatedPosition.xyz);
+                gl_PointSize = aSize * (1.0 / (distance * 0.5));
+                
                 vTextureCoord = aTextureCoord;
                 vAlpha = aAlpha;
             }
@@ -538,35 +939,56 @@
             uniformLocations: {
                 projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
                 modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+                rotationMatrix: gl.getUniformLocation(shaderProgram, 'uRotationMatrix'),
                 time: gl.getUniformLocation(shaderProgram, 'uTime')
             }
         };
         
-        // Generate random stars
+        // Generate random stars in a sphere surrounding the camera
         function initBuffers(gl) {
-            const numStars = 2000;
+            const numStars = 3000;
             const positions = [];
             const textureCoordinates = [];
             const sizes = [];
             const alphas = [];
             
             for (let i = 0; i < numStars; i++) {
-                // Random position in 3D space
-                const x = Math.random() * 2 - 1;  // -1 to 1
-                const y = Math.random() * 2 - 1;  // -1 to 1
-                const z = Math.random() * -1;     // -1 to 0 (behind the camera)
+                // Use spherical distribution for stars on the inside of a sphere
+                // Camera will be at the center looking outward
+                const phi = Math.acos(2 * Math.random() - 1);
+                const theta = 2 * Math.PI * Math.random();
+                
+                // Convert spherical to cartesian coordinates
+                // This places stars in a sphere surrounding the camera
+                // Use a large radius (8-20) to place stars far away
+                const radius = 8 + Math.random() * 12;
+                const x = radius * Math.sin(phi) * Math.cos(theta);
+                const y = radius * Math.sin(phi) * Math.sin(theta);
+                const z = radius * Math.cos(phi);
                 
                 positions.push(x, y, z);
                 
                 // Texture coordinates (not used in this simple version)
                 textureCoordinates.push(0, 0);
                 
-                // Random size based on depth (closer stars are larger)
-                const size = Math.random() * 5 + 1;
+                // Star sizes - distant stars should appear smaller
+                // Add some variation - make a few larger stars for visual interest
+                let size;
+                if (Math.random() > 0.98) {
+                    // Occasionally create a bright, larger star
+                    size = Math.random() * 4 + 3;
+                } else if (Math.random() > 0.8) {
+                    // Some medium stars
+                    size = Math.random() * 2 + 1.5;
+                } else {
+                    // Most stars are smaller
+                    size = Math.random() * 1.5 + 0.5;
+                }
                 sizes.push(size);
                 
-                // Random alpha (transparency)
-                const alpha = Math.random() * 0.5 + 0.5;
+                // Vary star brightness
+                // Make larger stars brighter
+                const alpha = 0.3 + (size / 7) * 0.7;
                 alphas.push(alpha);
             }
             
@@ -609,8 +1031,8 @@
             gl.depthFunc(gl.LEQUAL);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             
-            // Create perspective matrix
-            const fieldOfView = 45 * Math.PI / 180;
+            // Create perspective matrix with wider field of view for immersion
+            const fieldOfView = 60 * Math.PI / 180;  // 60 degrees
             const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
             const zNear = 0.1;
             const zFar = 100.0;
@@ -618,9 +1040,22 @@
             
             mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
             
-            // Set camera position
+            // Set camera position to origin (we're inside the star sphere)
             const modelViewMatrix = mat4.create();
-            mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]);
+            
+            // Create rotation matrix for slow star field rotation
+            const rotationMatrix = mat4.create();
+            
+            // Very slow rotation around all axes
+            // Use time for continuous rotation (convert milliseconds to seconds and scale down)
+            const rotationSpeed = 0.00005;  // Extremely slow rotation
+            const timeInSeconds = time * 0.001;
+            
+            // Rotate around Y axis (horizontal rotation)
+            mat4.rotateY(rotationMatrix, rotationMatrix, timeInSeconds * rotationSpeed);
+            
+            // Add slight rotation around X axis (vertical tilt)
+            mat4.rotateX(rotationMatrix, rotationMatrix, timeInSeconds * rotationSpeed * 0.3);
             
             // Bind position buffer and set attributes
             gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
@@ -684,6 +1119,11 @@
                 false,
                 modelViewMatrix
             );
+            gl.uniformMatrix4fv(
+                programInfo.uniformLocations.rotationMatrix,
+                false,
+                rotationMatrix
+            );
             gl.uniform1f(
                 programInfo.uniformLocations.time,
                 time
@@ -693,7 +1133,7 @@
             gl.drawArrays(gl.POINTS, 0, buffers.count);
         }
         
-        // Initialize matrix library (simple implementation)
+        // Initialize matrix library (enhanced implementation with rotation support)
         const mat4 = {
             create: function() {
                 return new Float32Array([
@@ -719,6 +1159,111 @@
                 out[14] = a[2] * v[0] + a[6] * v[1] + a[10] * v[2] + a[14];
                 out[15] = a[3] * v[0] + a[7] * v[1] + a[11] * v[2] + a[15];
                 return out;
+            },
+            // Rotate around X axis
+            rotateX: function(out, a, rad) {
+                const s = Math.sin(rad);
+                const c = Math.cos(rad);
+                const a10 = a[4];
+                const a11 = a[5];
+                const a12 = a[6];
+                const a13 = a[7];
+                const a20 = a[8];
+                const a21 = a[9];
+                const a22 = a[10];
+                const a23 = a[11];
+                
+                // Perform axis-specific matrix multiplication
+                out[4] = a10 * c + a20 * s;
+                out[5] = a11 * c + a21 * s;
+                out[6] = a12 * c + a22 * s;
+                out[7] = a13 * c + a23 * s;
+                out[8] = a20 * c - a10 * s;
+                out[9] = a21 * c - a11 * s;
+                out[10] = a22 * c - a12 * s;
+                out[11] = a23 * c - a13 * s;
+                
+                // Copy the rest
+                out[0] = a[0];
+                out[1] = a[1];
+                out[2] = a[2];
+                out[3] = a[3];
+                out[12] = a[12];
+                out[13] = a[13];
+                out[14] = a[14];
+                out[15] = a[15];
+                
+                return out;
+            },
+            // Rotate around Y axis
+            rotateY: function(out, a, rad) {
+                const s = Math.sin(rad);
+                const c = Math.cos(rad);
+                const a00 = a[0];
+                const a01 = a[1];
+                const a02 = a[2];
+                const a03 = a[3];
+                const a20 = a[8];
+                const a21 = a[9];
+                const a22 = a[10];
+                const a23 = a[11];
+                
+                // Perform axis-specific matrix multiplication
+                out[0] = a00 * c - a20 * s;
+                out[1] = a01 * c - a21 * s;
+                out[2] = a02 * c - a22 * s;
+                out[3] = a03 * c - a23 * s;
+                out[8] = a00 * s + a20 * c;
+                out[9] = a01 * s + a21 * c;
+                out[10] = a02 * s + a22 * c;
+                out[11] = a03 * s + a23 * c;
+                
+                // Copy the rest
+                out[4] = a[4];
+                out[5] = a[5];
+                out[6] = a[6];
+                out[7] = a[7];
+                out[12] = a[12];
+                out[13] = a[13];
+                out[14] = a[14];
+                out[15] = a[15];
+                
+                return out;
+            },
+            // Rotate around Z axis
+            rotateZ: function(out, a, rad) {
+                const s = Math.sin(rad);
+                const c = Math.cos(rad);
+                const a00 = a[0];
+                const a01 = a[1];
+                const a02 = a[2];
+                const a03 = a[3];
+                const a10 = a[4];
+                const a11 = a[5];
+                const a12 = a[6];
+                const a13 = a[7];
+                
+                // Perform axis-specific matrix multiplication
+                out[0] = a00 * c + a10 * s;
+                out[1] = a01 * c + a11 * s;
+                out[2] = a02 * c + a12 * s;
+                out[3] = a03 * c + a13 * s;
+                out[4] = a10 * c - a00 * s;
+                out[5] = a11 * c - a01 * s;
+                out[6] = a12 * c - a02 * s;
+                out[7] = a13 * c - a03 * s;
+                
+                // Copy the rest
+                out[8] = a[8];
+                out[9] = a[9];
+                out[10] = a[10];
+                out[11] = a[11];
+                out[12] = a[12];
+                out[13] = a[13];
+                out[14] = a[14];
+                out[15] = a[15];
+                
+                return out;
             }
         };
         
@@ -736,7 +1281,7 @@
         requestAnimationFrame(render);
         
         // Add floating particles with CSS for additional effect
-        const numParticles = 50;
+        const numParticles = 60;
         const container = document.querySelector('.landing-page');
         
         for (let i = 0; i < numParticles; i++) {
@@ -765,6 +1310,511 @@
             
             container.appendChild(particle);
         }
+        
+        // Add twinkling stars effect
+        function createTwinklingStars() {
+            const starsContainer = document.getElementById('twinkling-stars');
+            const numStars = 100;
+            
+            for (let i = 0; i < numStars; i++) {
+                const star = document.createElement('div');
+                star.className = 'twinkle-star';
+                
+                // Random position all over the screen
+                star.style.left = `${Math.random() * 100}vw`;
+                star.style.top = `${Math.random() * 100}vh`;
+                
+                // Random size (mostly very small)
+                const size = Math.random() * 2 + 1;
+                if (Math.random() > 0.97) { // Occasionally make a larger star
+                    star.style.width = `${size + 1}px`;
+                    star.style.height = `${size + 1}px`;
+                    star.style.boxShadow = `0 0 ${size + 2}px ${size}px rgba(255, 255, 255, 0.8)`;
+                } else {
+                    star.style.width = `${size}px`;
+                    star.style.height = `${size}px`;
+                }
+                
+                // Random brightness
+                const opacity = Math.random() * 0.5 + 0.5;
+                star.style.opacity = opacity;
+                
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        createTwinklingStars();
+    };
+    
+    // Homepage background music with delayed start and cycling
+    function setupBackgroundMusic() {
+        // Create audio element
+        const bgMusic = new Audio('{{ url_for("static", filename="assets/music/home.mp3") }}');
+        
+        // Store on window to prevent garbage collection
+        window.homepageMusic = bgMusic;
+        
+        // Play settings
+        const initialDelay = 10000; // 10 seconds initial delay
+        const cycleDelay = 30000; // 30 seconds between plays
+        const fadeInDuration = 5000; // 5 seconds fade in
+        const fadeStep = 0.02; // Volume increment per step
+        const fadeInterval = 100; // Milliseconds between volume changes
+        const maxVolume = 0.7; // Maximum volume (0.0 to 1.0)
+        
+        let fadeTimerId = null;
+        
+        // Function to reset and play the music with fade-in
+        const playMusicWithFade = () => {
+            // Reset state
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+            bgMusic.volume = 0;
+            
+            // Start playing
+            bgMusic.play().catch(err => {
+                console.warn('Auto-play prevented by browser. User interaction required:', err);
+                // Add a play button if autoplay fails
+                addPlayButton();
+            });
+            
+            // Start fade-in
+            clearInterval(fadeTimerId);
+            fadeTimerId = setInterval(() => {
+                if (bgMusic.volume < maxVolume) {
+                    bgMusic.volume = Math.min(bgMusic.volume + fadeStep, maxVolume);
+                } else {
+                    clearInterval(fadeTimerId);
+                }
+            }, fadeInterval);
+        };
+        
+        // Create a cycle for playback
+        const startMusicCycle = () => {
+            console.log('Starting homepage music cycle');
+            
+            // Initial delayed play
+            setTimeout(() => {
+                playMusicWithFade();
+                
+                // Set up cycling after the song ends
+                bgMusic.addEventListener('ended', () => {
+                    console.log('Music ended, cycling after delay');
+                    setTimeout(playMusicWithFade, cycleDelay);
+                });
+            }, initialDelay);
+        };
+        
+        // Add a play button in case autoplay is blocked
+        const addPlayButton = () => {
+            if (document.getElementById('music-play-button')) return;
+            
+            const playButton = document.createElement('button');
+            playButton.id = 'music-play-button';
+            playButton.innerHTML = '<i class="fas fa-music"></i>';
+            playButton.title = 'Play background music';
+            playButton.style.position = 'fixed';
+            playButton.style.bottom = '20px';
+            playButton.style.right = '20px';
+            playButton.style.zIndex = '1000';
+            playButton.style.background = 'rgba(0, 100, 200, 0.7)';
+            playButton.style.color = 'white';
+            playButton.style.border = 'none';
+            playButton.style.borderRadius = '50%';
+            playButton.style.width = '40px';
+            playButton.style.height = '40px';
+            playButton.style.cursor = 'pointer';
+            playButton.style.boxShadow = '0 0 10px rgba(0, 150, 255, 0.5)';
+            
+            playButton.addEventListener('click', () => {
+                playMusicWithFade();
+                playButton.style.display = 'none';
+            });
+            
+            document.body.appendChild(playButton);
+        };
+        
+        // Start the cycle
+        startMusicCycle();
+        
+        // Add user interaction fallback for browsers that block autoplay
+        document.addEventListener('click', () => {
+            if (bgMusic.paused && !bgMusic.played.length) {
+                playMusicWithFade();
+            }
+        }, { once: true });
+    }
+
+    // This function is called by our main init function above
+</script>
+
+<!-- Combined Scripts for Star Background, Music, and Modal -->
+<script>
+    // Main initialization when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Start the WebGL star background
+        initStarBackground();
+        
+        // Initialize background music
+        initBackgroundMusic();
+        
+        // Initialize the registration modal
+        initRegistrationModal();
     });
+    
+    // Authentication modals initialization and event handlers
+    function initRegistrationModal() {
+        const registerModal = document.getElementById('register-modal');
+        const loginModal = document.getElementById('login-modal');
+        const registerOpenButtons = [
+            document.getElementById('open-register-modal'),
+            document.getElementById('open-register-modal-2')
+        ];
+        const loginOpenButton = document.getElementById('open-login-modal');
+        const closeButtons = document.querySelectorAll('.close-modal');
+        const switchToLoginLink = document.getElementById('switch-to-login');
+        const switchToRegisterLink = document.getElementById('switch-to-register');
+        
+        // Helper function to show modal with animation
+        function showModal(modal) {
+            // Hide all modals first
+            document.querySelectorAll('.modal').forEach(m => {
+                m.style.display = 'none';
+            });
+            
+            // Show the requested modal
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+            
+            // Add animation class to form elements for staggered entrance
+            const formElements = modal.querySelectorAll('.form-group');
+            formElements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                
+                // Staggered animation
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 100 + (index * 80));
+            });
+        }
+        
+        // Helper function to close any open modal
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.opacity = '0';
+                modal.style.transition = 'opacity 0.3s ease';
+                
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    modal.style.opacity = '1';
+                    modal.style.transition = '';
+                }, 300);
+            });
+            
+            document.body.style.overflow = ''; // Re-enable scrolling
+        }
+        
+        // Set up open modal buttons
+        registerOpenButtons.forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', () => showModal(registerModal));
+            }
+        });
+        
+        if (loginOpenButton) {
+            loginOpenButton.addEventListener('click', () => showModal(loginModal));
+        }
+        
+        // Set up close buttons
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', closeModals);
+        });
+        
+        // Set up switching between modals
+        if (switchToLoginLink) {
+            switchToLoginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                showModal(loginModal);
+            });
+        }
+        
+        if (switchToRegisterLink) {
+            switchToRegisterLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                showModal(registerModal);
+            });
+        }
+        
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            document.querySelectorAll('.modal').forEach(modal => {
+                if (event.target === modal) {
+                    closeModals();
+                }
+            });
+        });
+        
+        // Close modals when ESC key is pressed
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && (
+                registerModal.style.display === 'block' || 
+                loginModal.style.display === 'block'
+            )) {
+                closeModals();
+            }
+        });
+        
+        // Helper to show success message
+        function showSuccessMessage(form, message) {
+            const modalBody = form.closest('.modal-body');
+            
+            // Create success message
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'success-message';
+            messageDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            messageDiv.style.background = 'rgba(46, 204, 113, 0.8)';
+            messageDiv.style.color = 'white';
+            messageDiv.style.padding = '15px';
+            messageDiv.style.borderRadius = '5px';
+            messageDiv.style.marginBottom = '20px';
+            messageDiv.style.textAlign = 'center';
+            messageDiv.style.animation = 'fade-in 0.5s ease-out';
+            
+            // Insert at top of modal
+            modalBody.insertBefore(messageDiv, modalBody.firstChild);
+            
+            // Hide form controls
+            form.querySelectorAll('.form-group, .form-actions, .form-footer').forEach(el => {
+                el.style.display = 'none';
+            });
+        }
+        
+        // Helper to show error message
+        function showErrorMessage(form, message) {
+            // Remove existing error messages
+            const existingErrors = form.querySelectorAll('.error-message');
+            existingErrors.forEach(el => el.remove());
+            
+            // Create new error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+            errorDiv.style.background = 'rgba(231, 76, 60, 0.8)';
+            errorDiv.style.color = 'white';
+            errorDiv.style.padding = '10px';
+            errorDiv.style.borderRadius = '5px';
+            errorDiv.style.marginBottom = '15px';
+            errorDiv.style.animation = 'shake 0.5s ease-out';
+            
+            // Insert at top of form
+            form.insertBefore(errorDiv, form.firstChild);
+            
+            // Scroll to top of form
+            errorDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Add shake animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                20%, 60% { transform: translateX(-5px); }
+                40%, 80% { transform: translateX(5px); }
+            }
+            @keyframes fade-in {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Handle registration form submission with AJAX
+        const registerForm = document.getElementById('register-form');
+        if (registerForm) {
+            registerForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Submit form data via AJAX
+                submitFormAjax(registerForm, (data) => {
+                    if (data.success) {
+                        showSuccessMessage(registerForm, data.message || 'Registration successful! Launching your career...');
+                        
+                        // Redirect to game after delay
+                        setTimeout(() => {
+                            window.location.href = data.redirect || '/game';
+                        }, 2000);
+                    } else {
+                        showErrorMessage(registerForm, data.message || 'An error occurred during registration.');
+                    }
+                });
+            });
+        }
+        
+        // Handle login form submission with AJAX
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Submit form data via AJAX
+                submitFormAjax(loginForm, (data) => {
+                    if (data.success) {
+                        showSuccessMessage(loginForm, data.message || 'Login successful! Preparing command center...');
+                        
+                        // Redirect to game after delay
+                        setTimeout(() => {
+                            window.location.href = data.redirect || '/game';
+                        }, 1500);
+                    } else {
+                        showErrorMessage(loginForm, data.message || 'Invalid credentials. Access denied.');
+                    }
+                });
+            });
+        }
+        
+        // Generic AJAX form submission helper
+        function submitFormAjax(form, callback) {
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Processing...';
+            submitBtn.disabled = true;
+            
+            // Collect form data
+            const formData = new FormData(form);
+            
+            // Send AJAX request
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
+                // Call callback with response data
+                callback(data);
+            })
+            .catch(error => {
+                console.error('Error during form submission:', error);
+                
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
+                // Show generic error
+                callback({
+                    success: false,
+                    message: 'A network error occurred. Please try again.'
+                });
+            });
+        }
+    }
+    
+    // Background music with delayed start, fade-in, and cycling
+    function initBackgroundMusic() {
+        const bgMusic = document.getElementById('background-music');
+        const initialDelay = 10000; // 10 seconds initial delay
+        const cycleDelay = 30000; // 30 seconds between plays
+        const fadeStep = 0.02; // Volume increment per step
+        const fadeInterval = 100; // Milliseconds between volume changes
+        const maxVolume = 0.7; // Maximum volume (0.0 to 1.0)
+        
+        let fadeTimerId = null;
+        
+        // Function to play with fade-in
+        function playWithFadeIn() {
+            // Reset
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+            bgMusic.volume = 0;
+            
+            // Play
+            const playPromise = bgMusic.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn('Autoplay prevented:', error);
+                    createPlayButton();
+                });
+            }
+            
+            // Fade in
+            clearInterval(fadeTimerId);
+            fadeTimerId = setInterval(() => {
+                if (bgMusic.volume < maxVolume) {
+                    bgMusic.volume = Math.min(bgMusic.volume + fadeStep, maxVolume);
+                } else {
+                    clearInterval(fadeTimerId);
+                }
+            }, fadeInterval);
+        }
+        
+        // Create a play button if autoplay is prevented
+        function createPlayButton() {
+            if (document.getElementById('music-play-button')) return;
+            
+            const btn = document.createElement('button');
+            btn.id = 'music-play-button';
+            btn.innerHTML = '<i class="fas fa-music"></i>';
+            btn.title = 'Play background music';
+            btn.style.position = 'fixed';
+            btn.style.bottom = '20px';
+            btn.style.right = '20px';
+            btn.style.zIndex = '1000';
+            btn.style.background = 'rgba(0, 100, 200, 0.7)';
+            btn.style.color = 'white';
+            btn.style.border = 'none';
+            btn.style.borderRadius = '50%';
+            btn.style.width = '40px';
+            btn.style.height = '40px';
+            btn.style.cursor = 'pointer';
+            btn.style.boxShadow = '0 0 10px rgba(0, 150, 255, 0.5)';
+            btn.style.transition = 'all 0.3s ease';
+            
+            btn.addEventListener('mouseover', () => {
+                btn.style.transform = 'scale(1.1)';
+                btn.style.boxShadow = '0 0 15px rgba(0, 150, 255, 0.7)';
+            });
+            
+            btn.addEventListener('mouseout', () => {
+                btn.style.transform = 'scale(1)';
+                btn.style.boxShadow = '0 0 10px rgba(0, 150, 255, 0.5)';
+            });
+            
+            btn.addEventListener('click', () => {
+                playWithFadeIn();
+                btn.style.display = 'none';
+            });
+            
+            document.body.appendChild(btn);
+        }
+        
+        // Set up the cycling behavior
+        bgMusic.addEventListener('ended', () => {
+            console.log('Music ended, will restart after delay');
+            setTimeout(playWithFadeIn, cycleDelay);
+        });
+        
+        // Start with initial delay
+        setTimeout(() => {
+            playWithFadeIn();
+        }, initialDelay);
+        
+        // Fallback for autoplay restrictions
+        document.addEventListener('click', () => {
+            if (bgMusic.paused && !bgMusic.played.length) {
+                playWithFadeIn();
+            }
+        }, { once: true });
+    }
 </script>
 {% endblock %}

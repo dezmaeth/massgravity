@@ -1,6 +1,6 @@
 /* Space RTS themed animations and effects */
 
-/* Stars background */
+/* Enhanced Stars background */
 .space-background {
     position: fixed;
     top: 0;
@@ -14,10 +14,19 @@
 
 @keyframes move-stars {
     from {
-        transform: translateY(0);
+        transform: translateY(0) rotate(0deg);
     }
     to {
-        transform: translateY(-2000px);
+        transform: translateY(-2000px) rotate(5deg);
+    }
+}
+
+@keyframes twinkle {
+    0%, 100% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 0.8;
     }
 }
 
@@ -28,14 +37,18 @@
     width: 100%;
     height: 200%;
     background-image: 
-        radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 20px 30px, #eee, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
         radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 230px 190px, #fff, rgba(0,0,0,0));
+        radial-gradient(1px 1px at 160px 120px, #ddd, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 230px 190px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 280px 250px, #eee, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 320px 310px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 380px 340px, #ddd, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 440px 390px, #fff, rgba(0,0,0,0));
     background-repeat: repeat;
-    background-size: 300px 300px;
-    animation: move-stars 120s linear infinite;
+    background-size: 500px 500px;
+    animation: move-stars 180s linear infinite;
     opacity: 0.3;
     z-index: -1;
 }
@@ -44,12 +57,49 @@
     background-image: 
         radial-gradient(1px 1px at 50px 80px, #fff, rgba(0,0,0,0)),
         radial-gradient(1px 1px at 120px 40px, #eee, rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 170px 120px, #ddd, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 170px 120px, #ddd, rgba(0,0,0,0)),
         radial-gradient(1px 1px at 210px 60px, #fff, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 290px 150px, #fff, rgba(0,0,0,0));
+        radial-gradient(1px 1px at 290px 150px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 330px 220px, #ddd, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 400px 250px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 450px 300px, #eee, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 500px 350px, #fff, rgba(0,0,0,0));
+    background-size: 550px 550px;
+    animation: move-stars 240s linear infinite;
     animation-delay: -50s;
     opacity: 0.4;
 }
+
+/* Twinkling stars effect */
+.twinkling-stars {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.twinkle-star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background-color: #fff;
+    animation: twinkle 4s infinite alternate;
+}
+
+/* Random animation durations and delays for twinkling stars */
+.twinkle-star:nth-child(2n) { animation-duration: 3s; }
+.twinkle-star:nth-child(3n) { animation-duration: 5s; }
+.twinkle-star:nth-child(5n) { animation-duration: 6s; }
+.twinkle-star:nth-child(7n) { animation-duration: 7s; }
+
+.twinkle-star:nth-child(2n+1) { animation-delay: 0.5s; }
+.twinkle-star:nth-child(3n+1) { animation-delay: 1s; }
+.twinkle-star:nth-child(5n+1) { animation-delay: 1.5s; }
+.twinkle-star:nth-child(7n+1) { animation-delay: 2s; }
 
 /* Pulsing glow effect */
 @keyframes pulse-glow {
