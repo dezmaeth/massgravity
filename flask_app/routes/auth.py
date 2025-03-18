@@ -32,6 +32,7 @@ def register():
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
+        faction = request.form.get('faction')
         
         if User.query.filter_by(username=username).first():
             flash('Username already exists')
@@ -41,9 +42,17 @@ def register():
             flash('Email already registered')
             return render_template('register.html')
         
-        user = User(username=username, email=email)
+        if not faction or faction not in ['blue', 'red', 'green']:
+            flash('Please select a valid faction')
+            return render_template('register.html')
+        
+        user = User(username=username, email=email, faction=faction)
         user.set_password(password)
         db.session.add(user)
+        db.session.commit()
+        
+        # Initialize game data after user is created
+        user.initialize_game_data()
         db.session.commit()
         
         return redirect(url_for('auth.login'))

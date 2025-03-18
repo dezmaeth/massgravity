@@ -271,3 +271,109 @@ def api_delete_user(user_id):
         "success": True,
         "message": f"Deleted user {username}"
     })
+
+@admin.route('/user_resources', methods=['GET'])
+@login_required
+@admin_required
+def user_resources():
+    """View to manage user resources"""
+    users = User.query.all()
+    
+    # Process user data for display
+    user_data = []
+    for user in users:
+        try:
+            # Parse game data if available
+            game_data = json.loads(user.game_data) if user.game_data else {}
+            
+            # Extract resource information
+            resources = game_data.get('resources', 0)
+            research_points = game_data.get('research_points', 0)
+            population = game_data.get('population', 0)
+            blue_material = game_data.get('materials', {}).get('blue', 0)
+            red_material = game_data.get('materials', {}).get('red', 0)
+            green_material = game_data.get('materials', {}).get('green', 0)
+            
+            # Create a user entry for display
+            user_entry = {
+                'id': user.id,
+                'username': user.username,
+                'faction': user.faction,
+                'resources': resources,
+                'research_points': research_points,
+                'population': population,
+                'blue_material': blue_material,
+                'red_material': red_material,
+                'green_material': green_material
+            }
+            
+            user_data.append(user_entry)
+            
+        except (json.JSONDecodeError, KeyError):
+            # Handle invalid JSON or missing keys
+            user_data.append({
+                'id': user.id,
+                'username': user.username,
+                'faction': user.faction,
+                'resources': 0,
+                'research_points': 0,
+                'population': 0,
+                'blue_material': 0,
+                'red_material': 0,
+                'green_material': 0
+            })
+    
+    return render_template('admin/user_resources.html', users=user_data)
+
+@admin.route('/api/update_user_resources/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def api_update_user_resources(user_id):
+    """API endpoint to update a user's resources"""
+    user = User.query.get_or_404(user_id)
+    data = request.json
+    
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    
+    try:
+        # Parse current game data
+        game_data = json.loads(user.game_data) if user.game_data else {}
+        
+        # Update resources
+        if 'resources' in data:
+            game_data['resources'] = float(data['resources'])
+        
+        # Update research points
+        if 'research_points' in data:
+            game_data['research_points'] = float(data['research_points'])
+        
+        # Update population
+        if 'population' in data:
+            game_data['population'] = float(data['population'])
+        
+        # Initialize materials if not present
+        if 'materials' not in game_data:
+            game_data['materials'] = {'blue': 0, 'red': 0, 'green': 0}
+        
+        # Update faction materials
+        if 'blue_material' in data:
+            game_data['materials']['blue'] = float(data['blue_material'])
+        
+        if 'red_material' in data:
+            game_data['materials']['red'] = float(data['red_material'])
+        
+        if 'green_material' in data:
+            game_data['materials']['green'] = float(data['green_material'])
+        
+        # Save updated game data
+        user.game_data = json.dumps(game_data)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Updated resources for user {user.username}"
+        })
+        
+    except (json.JSONDecodeError, ValueError) as e:
+        return jsonify({"error": f"Failed to update resources: {str(e)}"}), 400

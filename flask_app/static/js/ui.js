@@ -49,6 +49,37 @@ export class GameUI {
                 pointer-events: auto;
             }
             
+            .action-buttons {
+                margin-top: 15px;
+                display: flex;
+                justify-content: center;
+            }
+            
+            .action-button {
+                background: linear-gradient(to bottom, rgba(0, 120, 255, 0.7), rgba(0, 80, 170, 0.7));
+                border: 1px solid rgba(0, 150, 255, 0.5);
+                border-radius: 4px;
+                color: white;
+                padding: 8px 15px;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+            
+            .action-button:hover {
+                background: linear-gradient(to bottom, rgba(0, 140, 255, 0.8), rgba(0, 100, 200, 0.8));
+                transform: translateY(-2px);
+                box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
+            }
+            
+            .action-button:active {
+                transform: translateY(0);
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            }
+            
             .detail-panel h2 {
                 margin-top: 0;
                 color: #00ccff;
@@ -177,8 +208,13 @@ export class GameUI {
         } else {
             console.log("Object is null or not a planet/star");
             this.hideDetailPanel();
+            // Hide both menus when deselecting
             if (window.buildMenuUI) {
                 window.buildMenuUI.hide();
+            }
+            // Also hide ship builder
+            if (this.game && this.game.shipBuilder) {
+                this.game.shipBuilder.hide();
             }
         }
     }
@@ -224,23 +260,33 @@ export class GameUI {
                 `;
                 
                 // List each structure
+                const structureColors = {
+                    'mining': '#ffcc00',
+                    'research': '#00ccff',
+                    'colony': '#00ff44',
+                    'defense': '#ff3300',
+                    'fighter_hangar': '#3498db',
+                    'shipyard': '#9b59b6'
+                };
+                
+                const structureNames = {
+                    'mining': 'Mining Station',
+                    'research': 'Research Outpost',
+                    'colony': 'Colony Base',
+                    'defense': 'Defense Platform',
+                    'fighter_hangar': 'Fighter Hangar',
+                    'shipyard': 'Capital Shipyard'
+                };
+                
+                let hasShipFacilities = false;
+                
                 data.structures.forEach(structure => {
-                    const structureColors = {
-                        'mining': '#ffcc00',
-                        'research': '#00ccff',
-                        'colony': '#00ff44',
-                        'defense': '#ff3300'
-                    };
-                    
-                    const structureNames = {
-                        'mining': 'Mining Station',
-                        'research': 'Research Outpost',
-                        'colony': 'Colony Base',
-                        'defense': 'Defense Platform'
-                    };
-                    
                     const color = structureColors[structure.type] || '#ffffff';
                     const name = structureNames[structure.type] || structure.type;
+                    
+                    if (structure.type === 'fighter_hangar' || structure.type === 'shipyard') {
+                        hasShipFacilities = true;
+                    }
                     
                     html += `
                         <div class="structure-item">
@@ -252,8 +298,47 @@ export class GameUI {
                 
                 html += `
                     </div>
-                </div>
                 `;
+                
+                // Add ship building button if planet has hangars or shipyards
+                if (hasShipFacilities) {
+                    html += `
+                    <div class="action-buttons">
+                        <button id="build-ships-btn" class="action-button">
+                            <i class="fas fa-rocket"></i> Build Ships
+                        </button>
+                    </div>
+                    `;
+                }
+                
+                html += `</div>`;
+                
+                // Add event listener for ship building button and immediately show the ship builder menu
+                setTimeout(() => {
+                    const shipButton = document.getElementById('build-ships-btn');
+                    if (shipButton && this.game && this.game.shipBuilder) {
+                        // Show the ship builder immediately when planet with facilities is selected
+                        if (hasShipFacilities) {
+                            this.game.shipBuilder.show(this.selectedObject);
+                        }
+                        
+                        // Add click event for toggling the ship builder
+                        shipButton.addEventListener('click', () => {
+                            // Toggle the ship builder visibility
+                            const shipMenu = document.getElementById('ship-build-menu');
+                            if (shipMenu) {
+                                if (shipMenu.style.display === 'none') {
+                                    this.game.shipBuilder.show(this.selectedObject);
+                                } else {
+                                    this.game.shipBuilder.hide();
+                                }
+                            } else {
+                                this.game.shipBuilder.show(this.selectedObject);
+                            }
+                        });
+                    }
+                }, 0);
+                
             } else {
                 html += `</div>`;
             }

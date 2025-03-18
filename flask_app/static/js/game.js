@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Planet } from './objects/planet.js';
 import { Star } from './objects/star.js';
 import { GameUI } from './ui.js';
+import { ShipBuilder } from './shipBuilder.js';
 
 // Game state management
 let gameState = {
@@ -11,7 +12,21 @@ let gameState = {
     planets: [],
     stars: [],
     resources: 500, // Start with some initial resources to enable building
-    mining_facilities: {}
+    research_points: 0, // Research points
+    population: 0, // Population
+    mining_facilities: {},
+    research_outposts: {},
+    colony_bases: {},
+    materials: {
+        blue: 0,
+        red: 0,
+        green: 0
+    },
+    orbital_structures: {}, // For fighter hangars and shipyards
+    ships: {
+        fighters: 0,
+        capital_ships: 0
+    }
 };
 
 // Make gameState global for easier access from all modules
@@ -32,11 +47,11 @@ class MassGravity {
             miningInterval: 60         // Default value in seconds, will be updated from server
         };
         
-        // Resource generation tracking
-        this.lastMiningTime = Date.now();
-        
         // Store reference to gameState
         this.gameState = gameState;
+        
+        // Store socket reference for easy access
+        this.socket = window.socket;
         
         // Set up save button handler
         //document.getElementById('save-game').addEventListener('click', () => this.saveGame());
@@ -48,6 +63,7 @@ class MassGravity {
         ]).then(() => {
             this.initComponents();
             this.initScene();
+            this.initAudio();
             this.initInteraction();
             this.initUI();
             this.setListeners();
@@ -134,14 +150,37 @@ class MassGravity {
             resourcesValue.textContent = Math.floor(gameState.resources);
         }
         
-        // Count total mining facilities
-        const miningFacilitiesValue = document.getElementById('mining-facilities-value');
-        if (miningFacilitiesValue && gameState.mining_facilities) {
-            let totalFacilities = 0;
-            for (const planetId in gameState.mining_facilities) {
-                totalFacilities += gameState.mining_facilities[planetId];
+        // Update research points
+        const researchPointsValue = document.getElementById('research-points-value');
+        if (researchPointsValue && gameState.research_points !== undefined) {
+            researchPointsValue.textContent = Math.floor(gameState.research_points);
+        }
+        
+        // Update population
+        const populationValue = document.getElementById('population-value');
+        if (populationValue && gameState.population !== undefined) {
+            populationValue.textContent = Math.floor(gameState.population);
+        }
+        
+        // Update faction materials
+        if (gameState.materials) {
+            // Blue materials
+            const blueMaterial = document.getElementById('blue-material-value');
+            if (blueMaterial && gameState.materials.blue !== undefined) {
+                blueMaterial.textContent = Math.floor(gameState.materials.blue);
             }
-            miningFacilitiesValue.textContent = totalFacilities;
+            
+            // Red materials
+            const redMaterial = document.getElementById('red-material-value');
+            if (redMaterial && gameState.materials.red !== undefined) {
+                redMaterial.textContent = Math.floor(gameState.materials.red);
+            }
+            
+            // Green materials
+            const greenMaterial = document.getElementById('green-material-value');
+            if (greenMaterial && gameState.materials.green !== undefined) {
+                greenMaterial.textContent = Math.floor(gameState.materials.green);
+            }
         }
     }
     
@@ -204,41 +243,65 @@ class MassGravity {
                 });
             }
             
-            const response = await fetch('/api/save_game', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(gameState)
-            });
-            
-            const result = await response.json();
-            if (result.success) {
-                console.log("Game saved successfully");
+            // Use Socket.IO to save the game
+            if (window.socket) {
+                console.log("Saving game via Socket.IO");
+                window.socket.emit('save_game', gameState);
+            } else {
+                console.warn("Socket.IO not available, falling back to HTTP API");
                 
-                // Update resource display after saving (server may have updated resources)
-                this.updateResourceDisplay();
+                // Fallback to HTTP API
+                const response = await fetch('/api/save_game', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(gameState)
+                });
                 
-                // Show a brief notification
-                const notification = document.createElement('div');
-                notification.textContent = 'Game saved';
-                notification.style.position = 'absolute';
-                notification.style.top = '10px';
-                notification.style.left = '50%';
-                notification.style.transform = 'translateX(-50%)';
-                notification.style.background = 'rgba(0,100,0,0.7)';
-                notification.style.color = 'white';
-                notification.style.padding = '10px';
-                notification.style.borderRadius = '5px';
-                notification.style.zIndex = '1000';
-                document.body.appendChild(notification);
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 2000);
+                const result = await response.json();
+                if (result.success) {
+                    console.log("Game saved successfully via HTTP API");
+                    
+                    // If server returned updated data (after mining calculations), use it
+                    if (result.updated_data) {
+                        console.log("Received updated game data from server");
+                        gameState = result.updated_data;
+                        window.gameState = gameState; // Update global reference
+                        this.gameState = gameState; // Update instance reference
+                        this.updateResourceDisplay();
+                    }
+                    
+                    // Show notification
+                    this.showSaveNotification();
+                }
             }
         } catch (error) {
             console.error("Error saving game:", error);
         }
+    }
+    
+    // Helper method to show save notification
+    showSaveNotification() {
+        const notification = document.createElement('div');
+        notification.textContent = 'Game saved';
+        notification.style.position = 'absolute';
+        notification.style.top = '10px';
+        notification.style.left = '50%';
+        notification.style.transform = 'translateX(-50%)';
+        notification.style.background = 'rgba(46, 204, 113, 0.8)';
+        notification.style.color = 'white';
+        notification.style.padding = '10px';
+        notification.style.borderRadius = '5px';
+        notification.style.zIndex = '1000';
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.5s';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 500);
+        }, 2000);
     }
     
     saveGameData() {
@@ -301,6 +364,66 @@ class MassGravity {
         // Zoomed state tracking
         this.isZoomedIn = false;
         this.zoomedPlanet = null;
+    }
+    
+    initAudio() {
+        // Initialize background music
+        this.backgroundMusic = new Audio('/static/assets/music/track01.mp3');
+        this.backgroundMusic.loop = true;
+        this.backgroundMusic.volume = 0; // Start with volume at 0 for fade-in
+        this.targetMusicVolume = 0.7; // Default maximum volume
+        this.isMusicMuted = false;
+        
+        // Set a timeout to start playing music 15 seconds after initialization
+        setTimeout(() => {
+            this.playBackgroundMusic();
+        }, 15000);
+    }
+    
+    playBackgroundMusic() {
+        // Start playing the music
+        this.backgroundMusic.play().catch(e => {
+            console.warn('Could not autoplay music. User interaction may be required:', e);
+        });
+        
+        // Fade in the volume gradually
+        let volume = 0;
+        const fadeStep = 0.01; // How much to increase volume each step
+        const fadeInterval = 100; // Milliseconds between each volume change
+        
+        this.fadeInInterval = setInterval(() => {
+            if (volume < this.targetMusicVolume) {
+                volume += fadeStep;
+                this.backgroundMusic.volume = volume;
+            } else {
+                clearInterval(this.fadeInInterval);
+                this.fadeInInterval = null;
+            }
+        }, fadeInterval);
+    }
+    
+    setMusicVolume(volume) {
+        // Set a new target volume (0.0 to 1.0)
+        this.targetMusicVolume = Math.max(0, Math.min(1, volume));
+        
+        // If not in the middle of a fade, set volume immediately
+        if (!this.fadeInInterval) {
+            this.backgroundMusic.volume = this.isMusicMuted ? 0 : this.targetMusicVolume;
+        }
+    }
+    
+    toggleMusicMute() {
+        this.isMusicMuted = !this.isMusicMuted;
+        
+        if (this.isMusicMuted) {
+            // Store current volume and set to 0
+            this.backgroundMusic.volume = 0;
+        } else {
+            // Restore volume
+            this.backgroundMusic.volume = this.targetMusicVolume;
+        }
+        
+        return this.isMusicMuted;
     }
     
     initScene() {
@@ -395,19 +518,23 @@ class MassGravity {
     
     initUI() {
         this.ui = new GameUI(this);
+        this.shipBuilder = new ShipBuilder(this);
+        
+        // Make the game instance available globally for ShipBuilder
+        window.massGravity = this;
         
         // We're using window.buildMenuUI which is set up in game.html
         console.log("initUI - window.buildMenuUI available:", !!window.buildMenuUI);
         
         // Update resource display
         this.updateResourceDisplay();
+        
+        // Request initial resource update from server
+        this.requestResourceUpdate();
     }
     
     initInteraction() {
-        // Set up click handling
-        this.renderer.domElement.addEventListener('click', this.onMouseClick.bind(this), false);
-        
-        // Add double click detection
+        // We're only using double-click for selection now
         this.renderer.domElement.addEventListener('click', this.handleDoubleClick.bind(this), false);
         
         // Listen for build structure events
@@ -495,49 +622,55 @@ class MassGravity {
         // Store the current camera position
         const startPos = this.camera.position.clone();
         
-        // Get the orbit container that holds the planet
-        let orbitContainer = planet.parent;
-        
         // Store the planet and orbit for continuous tracking during render
         this.isZoomedIn = true;
         this.zoomedPlanet = planet;
         
-        // Get world position of the planet
+        // Get accurate world position of the planet
         const planetPos = new THREE.Vector3();
         planet.getWorldPosition(planetPos);
         
-        const planetRadius = planet.children[0].geometry.parameters.radius;
-        const distance = planetRadius * 3; // Set viewing distance based on planet size
+        // Ensure we have a valid radius (checking planet's mesh - typically the first child)
+        let planetRadius = 1;
+        if (planet.children && planet.children.length > 0 && 
+            planet.children[0].geometry && planet.children[0].geometry.parameters) {
+            planetRadius = planet.children[0].geometry.parameters.radius || 1;
+        }
         
-        // Calculate a nice viewing angle slightly above the orbital plane
-        const targetDirection = new THREE.Vector3(0.5, 0.3, 1).normalize();
+        // Set viewing distance based on planet size (larger distance for better view)
+        const distance = planetRadius * 5;
+        
+        // Calculate a nice viewing angle slightly above and to the side of the orbital plane
+        const targetDirection = new THREE.Vector3(0.7, 0.4, 0.8).normalize();
+        
+        // Calculate target position based on planet position
         const targetPos = planetPos.clone().add(
             targetDirection.multiplyScalar(distance)
         );
         
         // Use a longer animation duration for smoother transition
-        const duration = 1500; // ms
+        const duration = 1800; // ms
         const startTime = Date.now();
-        
-        // Store control state
-        const originalControlsTarget = this.controls.target.clone();
         
         // Disable controls during transition
         this.controls.enabled = false;
         
+        // Animation function
         const animate = () => {
             const now = Date.now();
             const elapsed = now - startTime;
             const progress = Math.min(elapsed / duration, 1);
             
-            // Smooth easing function
-            const smoothProgress = progress * progress * (3 - 2 * progress);
+            // Smooth easing function for natural motion
+            const smoothProgress = progress < 0.5 
+                ? 2 * progress * progress 
+                : -1 + (4 - 2 * progress) * progress;
             
-            // Get updated planet position (it may have moved in its orbit)
+            // Get fresh planet position in case it's moving in orbit
             const updatedPlanetPos = new THREE.Vector3();
             planet.getWorldPosition(updatedPlanetPos);
             
-            // Update camera target to follow the moving planet
+            // Set controls target to planet position
             this.controls.target.copy(updatedPlanetPos);
             
             // Calculate camera position relative to updated planet position
@@ -545,28 +678,32 @@ class MassGravity {
                 targetDirection.clone().multiplyScalar(distance)
             );
             
-            // Interpolate camera position
+            // Move camera smoothly
             this.camera.position.lerpVectors(startPos, newTargetPos, smoothProgress);
             
-            // Make camera look at the planet
+            // Keep camera looking at planet
             this.camera.lookAt(updatedPlanetPos);
+            
+            // Update OrbitControls
+            this.controls.update();
             
             if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
                 // Animation complete
-                // Re-enable controls with new target
                 this.controls.enabled = true;
-                
-                // Update controls
-                this.controls.update();
-                
-                // Reset transitioning flag
                 this.isTransitioning = false;
+                
+                // Make a final camera position adjustment to ensure proper view
+                this.camera.position.copy(newTargetPos);
+                this.controls.target.copy(updatedPlanetPos);
+                this.controls.update();
                 
                 // Select the planet for UI
                 this.selectedObject = planet;
                 this.ui.selectObject(planet);
+                
+                console.log("Camera zoom complete, looking at:", updatedPlanetPos);
             }
         };
         
@@ -613,6 +750,11 @@ class MassGravity {
         this.selectedObject = null;
         if (this.ui) {
             this.ui.selectObject(null);
+        }
+        
+        // Hide ship builder menu if it exists
+        if (this.shipBuilder) {
+            this.shipBuilder.hide();
         }
     }
     
@@ -996,42 +1138,10 @@ class MassGravity {
         }
     }
     
-    // Generate resources based on mining facilities
-    generateResources() {
-        const now = Date.now();
-        const elapsedSeconds = (now - this.lastMiningTime) / 1000;
-        
-        // Check if enough time has passed according to mining interval setting
-        if (elapsedSeconds >= this.gameSettings.miningInterval) {
-            // Get all mining facilities
-            let totalMiningFacilities = 0;
-            if (gameState.mining_facilities) {
-                for (const planetId in gameState.mining_facilities) {
-                    totalMiningFacilities += gameState.mining_facilities[planetId];
-                }
-            }
-            
-            // Calculate resources to add
-            const resourcesPerFacility = this.gameSettings.miningRate;
-            const totalResourcesToAdd = totalMiningFacilities * resourcesPerFacility;
-            
-            // Add resources
-            if (totalResourcesToAdd > 0) {
-                gameState.resources += totalResourcesToAdd;
-                
-                // Update display
-                this.updateResourceDisplay();
-                
-                // Show mining notification for significant amounts
-                if (totalMiningFacilities >= 3) {
-                    this.showMiningNotification(totalResourcesToAdd);
-                }
-                
-                console.log(`Generated ${totalResourcesToAdd} resources from ${totalMiningFacilities} mining facilities`);
-            }
-            
-            // Reset timer
-            this.lastMiningTime = now;
+    // Request resource update via Socket.IO
+    requestResourceUpdate() {
+        if (window.socket) {
+            window.socket.emit('request_update');
         }
     }
     
@@ -1086,8 +1196,14 @@ class MassGravity {
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize());
         
-        // Set up auto-update for resource display
+        // Update resource display periodically without generating anything
         setInterval(() => this.updateResourceDisplay(), 5000);
+        
+        // Set up socket listeners for WebSocket events
+        if (window.socket) {
+            // Ensure socket connection doesn't get garbage collected
+            this.socket = window.socket;
+        }
         
         this.updateLoadingProgress(100);
     }
@@ -1135,8 +1251,7 @@ class MassGravity {
             this.controls.update();
         }
         
-        // Generate resources based on mining facilities
-        this.generateResources();
+        // Resource generation now happens server-side via WebSockets
         
         // Animate planet and star objects
         if (this.solar) {

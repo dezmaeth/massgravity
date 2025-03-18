@@ -1,377 +1,742 @@
-{% extends "base.html" %}
-
-{% block title %}Play Game{% endblock %}
-
-{% block head %}
-<style>
-    body, html {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        width: 100%;
-        height: 100%;
-    }
-    
-    header, footer {
-        display: none;
-    }
-    
-    main {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
-    
-    #game-container {
-        width: 100%;
-        height: 100%;
-    }
-    
-    #ui-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-    }
-    
-    #ui-overlay button, #ui-overlay .controls, #build-menu, #ui-overlay .build-menu {
-        pointer-events: auto;
-    }
-    
-    #resource-display {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 8px 16px;
-        font-size: 16px;
-        text-align: center;
-        z-index: 1000;
-        pointer-events: auto;
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-    }
-    
-    .resource-item {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    
-    .resource-item i {
-        color: #ffcc00;
-        margin-right: 5px;
-    }
-    
-    .logout-button {
-        margin-left: auto;
-        color: white;
-        text-decoration: none;
-    }
-    
-    .loading-screen {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: #000;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        color: white;
-        z-index: 1000;
-    }
-    
-    .loading-screen .progress {
-        width: 80%;
-        height: 20px;
-        background: rgba(255,255,255,0.1);
-        border-radius: 10px;
-        margin-top: 20px;
-    }
-    
-    .loading-screen .progress-bar {
-        height: 100%;
-        background: linear-gradient(to right, #00f, #0ff);
-        width: 0%;
-        border-radius: 10px;
-        transition: width 0.3s;
-    }
-    
-    /* Build Menu Styles */
-    #build-menu {
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(0, 20, 40, 0.8);
-        border: 1px solid rgba(0, 100, 255, 0.5);
-        border-radius: 5px;
-        padding: 15px;
-        color: white;
-        width: 300px;
-        z-index: 9999;
-        pointer-events: auto;
-    }
-    
-    #build-menu h3 {
-        margin-top: 0;
-        color: #00ccff;
-        border-bottom: 1px solid rgba(0, 100, 255, 0.5);
-        padding-bottom: 8px;
-        margin-bottom: 10px;
-    }
-    
-    .build-menu-item {
-        display: flex;
-        align-items: center;
-        padding: 8px;
-        margin-bottom: 5px;
-        background: rgba(0, 50, 100, 0.3);
-        border: 1px solid rgba(0, 100, 255, 0.3);
-        border-radius: 3px;
-        cursor: pointer;
-        transition: background 0.2s, border 0.2s;
-    }
-    
-    .build-menu-item:hover {
-        background: rgba(0, 70, 120, 0.5);
-        border: 1px solid rgba(0, 150, 255, 0.5);
-    }
-    
-    .build-menu-item.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        background: rgba(50, 50, 50, 0.3);
-        border: 1px solid rgba(100, 100, 100, 0.3);
-    }
-    
-    .build-menu-item-icon {
-        width: 32px;
-        height: 32px;
-        background: rgba(0, 100, 200, 0.5);
-        border-radius: 3px;
-        margin-right: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-    }
-    
-    .build-menu-item-details {
-        flex: 1;
-    }
-    
-    .build-menu-item-name {
-        font-weight: bold;
-        margin-bottom: 3px;
-    }
-    
-    .build-menu-item-desc {
-        font-size: 0.8em;
-        color: rgba(255, 255, 255, 0.7);
-    }
-    
-    .build-menu-item-cost {
-        font-size: 0.8em;
-        color: #ffcc00;
-    }
-    
-    .notification {
-        padding: 10px 20px;
-        background: rgba(0, 100, 200, 0.8);
-        color: white;
-        border-radius: 5px;
-        position: absolute;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1000;
-        transition: opacity 0.5s;
-    }
-</style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
-{% endblock %}
-
-{% block content %}
-<div id="loading-screen" class="loading-screen">
-    <h2>Loading Mass Gravity</h2>
-    <div class="progress">
-        <div id="progress-bar" class="progress-bar"></div>
-    </div>
-</div>
-
-<div id="resource-display">
-    <div class="resource-item">
-        <i class="fas fa-coins"></i>
-        <span id="resources-value">0</span> Resources
-    </div>
-    <div class="resource-item">
-        <i class="fas fa-industry"></i>
-        <span id="mining-facilities-value">0</span> Mining Facilities
-    </div>
-    <a href="{{ url_for('auth.logout') }}" class="resource-item logout-button">
-        <i class="fas fa-sign-out-alt"></i> Logout
-    </a>
-</div>
-
-<div id="game-container"></div>
-
-<!-- Build Menu (outside the UI overlay to fix z-index issues) -->
-<div id="build-menu" style="display: none;">
-    <h3>Build Structures</h3>
-    <div class="build-menu-content">
-        <!-- Structure items go here -->
-    </div>
-</div>
-
-<div id="ui-overlay">
-    <!-- Other UI elements can go here -->
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Store user info for the game
-    window.USER_INFO = {
-        id: {{ current_user.id }},
-        username: "{{ current_user.username }}"
-    };
-    
-    // Set up the build menu
-    document.addEventListener('DOMContentLoaded', function() {
-        const buildMenu = document.getElementById('build-menu');
-        const buildMenuContent = document.querySelector('.build-menu-content');
-        
-        // Only show the build menu when clicking on a planet
-        buildMenu.style.display = 'none';
-        
-        // Define building options
-        const buildOptions = [
-            {
-                type: 'mining',
-                name: 'Mining Station',
-                desc: 'Extracts minerals from the planet',
-                cost: 100,
-                icon: 'M',
-                iconColor: 'rgba(255, 200, 0, 0.5)'
-            },
-            {
-                type: 'research',
-                name: 'Research Outpost',
-                desc: 'Generates research points',
-                cost: 150,
-                icon: 'R',
-                iconColor: 'rgba(0, 200, 255, 0.5)'
-            },
-            {
-                type: 'colony',
-                name: 'Colony Base',
-                desc: 'Allows population growth',
-                cost: 200,
-                icon: 'C',
-                iconColor: 'rgba(0, 255, 100, 0.5)'
-            },
-            {
-                type: 'defense',
-                name: 'Defense Platform',
-                desc: 'Defends against enemy attacks',
-                cost: 180,
-                icon: 'D',
-                iconColor: 'rgba(255, 50, 0, 0.5)'
-            }
-        ];
-        
-        // Generate menu HTML
-        function updateBuildMenu(resources = 500) {
-            let html = '';
-            
-            buildOptions.forEach(option => {
-                const canAfford = resources >= option.cost;
-                const itemClass = canAfford ? 'build-menu-item' : 'build-menu-item disabled';
-                const costClass = canAfford ? 'build-menu-item-cost' : 'build-menu-item-cost insufficient';
-                
-                html += `
-                    <div class="${itemClass}" data-type="${option.type}" data-cost="${option.cost}">
-                        <div class="build-menu-item-icon" style="background-color: ${option.iconColor};">${option.icon}</div>
-                        <div class="build-menu-item-details">
-                            <div class="build-menu-item-name">${option.name}</div>
-                            <div class="build-menu-item-desc">${option.desc}</div>
-                            <div class="${costClass}">Cost: ${option.cost} resources</div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            buildMenuContent.innerHTML = html;
-            
-            // Add click handlers
-            buildMenuContent.querySelectorAll('.build-menu-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const type = this.getAttribute('data-type');
-                    const cost = parseInt(this.getAttribute('data-cost'));
-                    
-                    if (this.classList.contains('disabled')) {
-                        showNotification(`Not enough resources to build ${type} station.`);
-                        return;
-                    }
-                    
-                    // The game will handle this through the event listener
-                    const buildEvent = new CustomEvent('build-structure', {
-                        detail: { type, cost }
-                    });
-                    document.dispatchEvent(buildEvent);
-                });
-            });
-        }
-        
-        // Generate initial menu content
-        updateBuildMenu();
-        
-        // Show notification function
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                setTimeout(() => notification.remove(), 500);
-            }, 3000);
-        }
-        
-        // Export build menu functions to window object
-        window.buildMenuUI = {
-            show: function() {
-                buildMenu.style.display = 'block';
-            },
-            hide: function() {
-                buildMenu.style.display = 'none';
-            },
-            update: updateBuildMenu
-        };
-    });
-</script>
-
-<!-- Import Three.js from CDN -->
-<script type="importmap">
-{
-    "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
-    }
-}
-</script>
-<script type="module" src="{{ url_for('static', filename='js/game.js') }}"></script>
+{% extends "base.html" %}
+
+{% block title %}Play Game{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/space-animations.css') }}">
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+    }
+    
+    header, footer {
+        display: none;
+    }
+    
+    main {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    
+    #game-container {
+        width: 100%;
+        height: 100%;
+    }
+    
+    #ui-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+    
+    #ui-overlay button, #ui-overlay .controls, #build-menu, #ui-overlay .build-menu {
+        pointer-events: auto;
+    }
+    
+    #resource-display {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: rgba(0, 20, 40, 0.8);
+        border-bottom: 1px solid rgba(0, 100, 255, 0.5);
+        color: #a0e0ff;
+        padding: 8px 16px;
+        font-size: 16px;
+        text-align: center;
+        z-index: 1000;
+        pointer-events: auto;
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        text-shadow: 0 0 5px rgba(0, 150, 255, 0.5);
+        backdrop-filter: blur(5px);
+        box-shadow: 0 0 15px rgba(0, 100, 200, 0.3);
+    }
+    
+    .resource-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: transform 0.2s ease;
+    }
+    
+    .resource-item:hover {
+        transform: translateY(-2px);
+    }
+    
+    .resource-item i {
+        color: #ffcc00;
+        margin-right: 5px;
+    }
+    
+    .logout-button {
+        margin-left: auto;
+        color: white;
+        text-decoration: none;
+        transition: color 0.3s ease, text-shadow 0.3s ease;
+    }
+    
+    .logout-button:hover {
+        color: #ff6a6a;
+        text-shadow: 0 0 8px rgba(255, 106, 106, 0.7);
+    }
+    
+    .loading-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(ellipse at center, #1b2735 0%, #090a0f 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        color: white;
+        z-index: 1000;
+    }
+    
+    .loading-screen h2 {
+        color: #a0e0ff;
+        text-shadow: 0 0 10px rgba(0, 150, 255, 0.7);
+        animation: pulse-glow 2s infinite;
+    }
+    
+    .loading-screen .progress {
+        width: 80%;
+        height: 20px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        margin-top: 20px;
+        overflow: hidden;
+    }
+    
+    .loading-screen .progress-bar {
+        height: 100%;
+        background: linear-gradient(to right, #0066cc, #00ccff);
+        width: 0%;
+        border-radius: 10px;
+        transition: width 0.3s;
+        position: relative;
+    }
+    
+    .loading-screen .progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to right, 
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.4) 50%,
+            rgba(255, 255, 255, 0) 100%);
+        animation: scan-line 1.5s linear infinite;
+    }
+    
+    /* Build Menu Styles */
+    #build-menu {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0, 20, 40, 0.8);
+        border: 1px solid rgba(0, 100, 255, 0.5);
+        border-radius: 5px;
+        padding: 15px;
+        color: #a0e0ff;
+        width: 300px;
+        z-index: 9999;
+        pointer-events: auto;
+        box-shadow: 0 0 15px rgba(0, 100, 200, 0.3);
+        backdrop-filter: blur(5px);
+        animation: fade-in-up 0.5s ease-out forwards;
+    }
+    
+    #build-menu h3 {
+        margin-top: 0;
+        color: #00ccff;
+        border-bottom: 1px solid rgba(0, 100, 255, 0.5);
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        text-shadow: 0 0 5px rgba(0, 150, 255, 0.7);
+    }
+    
+    .build-menu-item {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        margin-bottom: 5px;
+        background: rgba(0, 50, 100, 0.3);
+        border: 1px solid rgba(0, 100, 255, 0.3);
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.3s;
+        animation: fade-in-up 0.5s forwards;
+    }
+    
+    .build-menu-item:hover {
+        background: rgba(0, 70, 120, 0.5);
+        border: 1px solid rgba(0, 150, 255, 0.5);
+        transform: translateX(5px);
+        box-shadow: 0 0 10px rgba(0, 150, 255, 0.3);
+    }
+    
+    .build-menu-item.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: rgba(50, 50, 50, 0.3);
+        border: 1px solid rgba(100, 100, 100, 0.3);
+    }
+    
+    .build-menu-item-icon {
+        width: 32px;
+        height: 32px;
+        background: rgba(0, 100, 200, 0.5);
+        border-radius: 3px;
+        margin-right: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        box-shadow: 0 0 5px rgba(0, 100, 200, 0.5);
+    }
+    
+    .build-menu-item-details {
+        flex: 1;
+    }
+    
+    .build-menu-item-name {
+        font-weight: bold;
+        margin-bottom: 3px;
+        text-shadow: 0 0 5px rgba(0, 150, 255, 0.5);
+    }
+    
+    .build-menu-item-desc {
+        font-size: 0.8em;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .build-menu-item-cost {
+        font-size: 0.8em;
+        color: #ffcc00;
+        text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+    }
+    
+    .notification {
+        padding: 10px 20px;
+        background: rgba(0, 100, 200, 0.8);
+        color: white;
+        border-radius: 5px;
+        position: absolute;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        border: 1px solid rgba(0, 150, 255, 0.5);
+        box-shadow: 0 0 15px rgba(0, 100, 200, 0.5);
+        text-shadow: 0 0 5px rgba(0, 150, 255, 0.7);
+        animation: notification-slide 5s forwards;
+        backdrop-filter: blur(5px);
+    }
+    
+    /* Faction Material Styling */
+    .faction-blue i {
+        color: #3498db;
+        text-shadow: 0 0 5px #3498db;
+    }
+    
+    .faction-red i {
+        color: #e74c3c;
+        text-shadow: 0 0 5px #e74c3c;
+    }
+    
+    .faction-green i {
+        color: #2ecc71;
+        text-shadow: 0 0 5px #2ecc71;
+    }
+
+    /* Connection status indicator */
+    #connection-status {
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        z-index: 1000;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        backdrop-filter: blur(5px);
+        animation: fade-in-up 0.5s ease-out forwards;
+    }
+
+    #connection-status.connected {
+        background-color: rgba(46, 204, 113, 0.7);
+        box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+    }
+
+    #connection-status.connecting {
+        background-color: rgba(243, 156, 18, 0.7);
+        box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+    }
+
+    #connection-status.disconnected {
+        background-color: rgba(231, 76, 60, 0.7);
+        box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        animation: alert-pulse 2s infinite;
+    }
+
+    #connection-status .indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    #connection-status.connected .indicator {
+        background-color: #2ecc71;
+        box-shadow: 0 0 5px #2ecc71;
+    }
+
+    #connection-status.connecting .indicator {
+        background-color: #f39c12;
+        box-shadow: 0 0 5px #f39c12;
+    }
+
+    #connection-status.disconnected .indicator {
+        background-color: #e74c3c;
+        box-shadow: 0 0 5px #e74c3c;
+    }
+    
+    /* Resource background bars */
+    #resources-value, #research-points-value, #population-value, 
+    #blue-material-value, #red-material-value, #green-material-value {
+        position: relative;
+        padding: 0 5px;
+        border-radius: 3px;
+        transition: all 0.3s ease;
+    }
+    
+    #resources-value::after, #research-points-value::after, #population-value::after,
+    #blue-material-value::after, #red-material-value::after, #green-material-value::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: currentColor;
+        border-radius: 2px;
+        opacity: 0.7;
+    }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<!-- Socket.IO Client -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Space background -->
+<div class="space-background">
+    <div class="nebula-background"></div>
+    <div class="stars"></div>
+    <div class="stars"></div>
+</div>
+
+<div id="loading-screen" class="loading-screen">
+    <h2>Loading Mass Gravity</h2>
+    <div class="progress">
+        <div id="progress-bar" class="progress-bar"></div>
+    </div>
+</div>
+
+<div id="resource-display" class="breathing-panel">
+    <div class="resource-item">
+        <i class="fas fa-coins pulse-glow"></i>
+        <span id="resources-value">0</span> Resources
+    </div>
+    <div class="resource-item">
+        <i class="fas fa-flask pulse-glow"></i>
+        <span id="research-points-value">0</span> Research
+    </div>
+    <div class="resource-item">
+        <i class="fas fa-users pulse-glow"></i>
+        <span id="population-value">0</span> Population
+    </div>
+    <div class="resource-item faction-blue">
+        <i class="fas fa-gem"></i>
+        <span id="blue-material-value">0</span>
+    </div>
+    <div class="resource-item faction-red">
+        <i class="fas fa-gem"></i>
+        <span id="red-material-value">0</span>
+    </div>
+    <div class="resource-item faction-green">
+        <i class="fas fa-gem"></i>
+        <span id="green-material-value">0</span>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="resource-item logout-button">
+        <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+</div>
+
+<div id="game-container"></div>
+
+<!-- Build Menu (outside the UI overlay to fix z-index issues) -->
+<div id="build-menu" style="display: none;" class="holographic-panel scanning-panel">
+    <h3>Build Structures</h3>
+    <div class="build-menu-content">
+        <!-- Structure items go here -->
+    </div>
+</div>
+
+<div id="ui-overlay">
+    <!-- Other UI elements can go here -->
+</div>
+
+<!-- Connection status indicator -->
+<div id="connection-status" class="connecting">
+    <div class="indicator"></div>
+    <span>Connecting...</span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Store user info for the game
+    window.USER_INFO = {
+        id: {{ current_user.id }},
+        username: "{{ current_user.username }}",
+        faction: "{{ current_user.faction }}"
+    };
+    
+    // Set up Socket.IO connection
+    const socket = io();
+    
+    // Connection status handlers
+    socket.on('connect', function() {
+        const statusDiv = document.getElementById('connection-status');
+        statusDiv.className = 'connected';
+        statusDiv.innerHTML = '<div class="indicator"></div><span>Connected</span>';
+        console.log('Socket connected');
+    });
+    
+    socket.on('disconnect', function() {
+        const statusDiv = document.getElementById('connection-status');
+        statusDiv.className = 'disconnected';
+        statusDiv.innerHTML = '<div class="indicator"></div><span>Disconnected</span>';
+        console.log('Socket disconnected');
+    });
+    
+    socket.on('connect_error', function() {
+        const statusDiv = document.getElementById('connection-status');
+        statusDiv.className = 'disconnected';
+        statusDiv.innerHTML = '<div class="indicator"></div><span>Connection Error</span>';
+        console.log('Socket connection error');
+    });
+    
+    // Resource update handler from server
+    socket.on('resource_update', function(data) {
+        console.log('Resource update received:', data);
+        
+        // Update game state with server data
+        if (window.gameState) {
+            // Update resources
+            window.gameState.resources = data.resources;
+            
+            // Update materials
+            if (data.materials && window.gameState.materials) {
+                window.gameState.materials.blue = data.materials.blue;
+                window.gameState.materials.red = data.materials.red;
+                window.gameState.materials.green = data.materials.green;
+            }
+            
+            // Update ships
+            if (data.ships && window.gameState.ships) {
+                window.gameState.ships.fighters = data.ships.fighters;
+                window.gameState.ships.capital_ships = data.ships.capital_ships;
+            }
+            
+            // Call update function if game is loaded
+            if (window.massGravity) {
+                window.massGravity.updateResourceDisplay();
+            } else {
+                // Directly update DOM elements if game isn't loaded yet
+                updateDOMResourceDisplay(data);
+            }
+        }
+    });
+    
+    // Save game response handler
+    socket.on('save_success', function(response) {
+        console.log('Save success:', response);
+        
+        if (response.updated_data) {
+            // Update game state with returned data
+            if (window.gameState) {
+                // Update game state with server data
+                Object.assign(window.gameState, response.updated_data);
+                
+                // Call update function if game is loaded
+                if (window.massGravity) {
+                    window.massGravity.updateResourceDisplay();
+                }
+            }
+        }
+        
+        // Show success notification
+        showNotification('Game saved successfully');
+    });
+    
+    socket.on('save_error', function(response) {
+        console.error('Save error:', response);
+        showNotification('Error saving game: ' + response.message, 'error');
+    });
+    
+    // Utility function to update resource display DOM elements directly with animation
+    function updateDOMResourceDisplay(data) {
+        // Helper function to animate value changes
+        function animateValueChange(element, newValue) {
+            if (!element) return;
+            
+            // Get current value
+            const currentValue = parseInt(element.textContent) || 0;
+            newValue = Math.floor(newValue);
+            
+            // If value changed, animate
+            if (currentValue !== newValue) {
+                // Add animation class
+                element.classList.add('resource-increment');
+                
+                // Set the new value
+                element.textContent = newValue;
+                
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    element.classList.remove('resource-increment');
+                }, 500);
+            }
+        }
+        
+        // Update resources
+        const resourcesValue = document.getElementById('resources-value');
+        if (resourcesValue && typeof data.resources !== 'undefined') {
+            animateValueChange(resourcesValue, data.resources);
+        }
+        
+        // Update research points
+        const researchPointsValue = document.getElementById('research-points-value');
+        if (researchPointsValue && typeof data.research_points !== 'undefined') {
+            animateValueChange(researchPointsValue, data.research_points);
+        }
+        
+        // Update population
+        const populationValue = document.getElementById('population-value');
+        if (populationValue && typeof data.population !== 'undefined') {
+            animateValueChange(populationValue, data.population);
+        }
+        
+        // Update faction materials
+        if (data.materials) {
+            // Blue materials
+            const blueMaterial = document.getElementById('blue-material-value');
+            if (blueMaterial && typeof data.materials.blue !== 'undefined') {
+                animateValueChange(blueMaterial, data.materials.blue);
+            }
+            
+            // Red materials
+            const redMaterial = document.getElementById('red-material-value');
+            if (redMaterial && typeof data.materials.red !== 'undefined') {
+                animateValueChange(redMaterial, data.materials.red);
+            }
+            
+            // Green materials
+            const greenMaterial = document.getElementById('green-material-value');
+            if (greenMaterial && typeof data.materials.green !== 'undefined') {
+                animateValueChange(greenMaterial, data.materials.green);
+            }
+        }
+    }
+    
+    // Utility function to show notifications with animation
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = 'notification ' + (type === 'error' ? 'error space-alert' : '');
+        
+        // Add icon based on notification type
+        const icon = type === 'error' ? 
+            '<i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>' : 
+            '<i class="fas fa-info-circle" style="margin-right: 8px;"></i>';
+            
+        notification.innerHTML = icon + message;
+        
+        // Set background color based on type
+        if (type === 'error') {
+            notification.style.backgroundColor = 'rgba(231, 76, 60, 0.8)';
+            notification.style.borderColor = 'rgba(231, 76, 60, 0.9)';
+        } else {
+            notification.style.backgroundColor = 'rgba(46, 204, 113, 0.8)';
+            notification.style.borderColor = 'rgba(46, 204, 113, 0.9)';
+        }
+        
+        document.body.appendChild(notification);
+        
+        // Add staggered animation class
+        notification.classList.add('fade-in-up');
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateY(-20px) translateX(-50%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    document.body.removeChild(notification);
+                }
+            }, 500);
+        }, 3000);
+    }
+    
+    // Set up the build menu
+    document.addEventListener('DOMContentLoaded', function() {
+        const buildMenu = document.getElementById('build-menu');
+        const buildMenuContent = document.querySelector('.build-menu-content');
+        
+        // Only show the build menu when clicking on a planet
+        buildMenu.style.display = 'none';
+        
+        // Define building options
+        const buildOptions = [
+            {
+                type: 'mining',
+                name: 'Mining Station',
+                desc: 'Extracts minerals from the planet',
+                cost: 100,
+                icon: 'M',
+                iconColor: 'rgba(255, 200, 0, 0.5)'
+            },
+            {
+                type: 'research',
+                name: 'Research Outpost',
+                desc: 'Generates research points',
+                cost: 150,
+                icon: 'R',
+                iconColor: 'rgba(0, 200, 255, 0.5)'
+            },
+            {
+                type: 'colony',
+                name: 'Colony Base',
+                desc: 'Allows population growth',
+                cost: 200,
+                icon: 'C',
+                iconColor: 'rgba(0, 255, 100, 0.5)'
+            },
+            {
+                type: 'defense',
+                name: 'Defense Platform',
+                desc: 'Defends against enemy attacks',
+                cost: 180,
+                icon: 'D',
+                iconColor: 'rgba(255, 50, 0, 0.5)'
+            },
+            {
+                type: 'fighter_hangar',
+                name: 'Fighter Hangar',
+                desc: 'Allows construction of fighter ships',
+                cost: 500,
+                icon: 'F',
+                iconColor: 'rgba(100, 150, 255, 0.5)'
+            },
+            {
+                type: 'shipyard',
+                name: 'Capital Shipyard',
+                desc: 'Allows construction of capital ships',
+                cost: 1000,
+                icon: 'S',
+                iconColor: 'rgba(200, 100, 255, 0.5)'
+            }
+        ];
+        
+        // Generate menu HTML
+        function updateBuildMenu(resources = 500) {
+            let html = '';
+            
+            buildOptions.forEach(option => {
+                const canAfford = resources >= option.cost;
+                const itemClass = canAfford ? 'build-menu-item' : 'build-menu-item disabled';
+                const costClass = canAfford ? 'build-menu-item-cost' : 'build-menu-item-cost insufficient';
+                
+                html += `
+                    <div class="${itemClass}" data-type="${option.type}" data-cost="${option.cost}">
+                        <div class="build-menu-item-icon" style="background-color: ${option.iconColor};">${option.icon}</div>
+                        <div class="build-menu-item-details">
+                            <div class="build-menu-item-name">${option.name}</div>
+                            <div class="build-menu-item-desc">${option.desc}</div>
+                            <div class="${costClass}">Cost: ${option.cost} resources</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            buildMenuContent.innerHTML = html;
+            
+            // Add click handlers
+            buildMenuContent.querySelectorAll('.build-menu-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const type = this.getAttribute('data-type');
+                    const cost = parseInt(this.getAttribute('data-cost'));
+                    
+                    if (this.classList.contains('disabled')) {
+                        showNotification(`Not enough resources to build ${type} station.`);
+                        return;
+                    }
+                    
+                    // The game will handle this through the event listener
+                    const buildEvent = new CustomEvent('build-structure', {
+                        detail: { type, cost }
+                    });
+                    document.dispatchEvent(buildEvent);
+                });
+            });
+        }
+        
+        // Generate initial menu content
+        updateBuildMenu();
+        
+        // Export build menu functions to window object
+        window.buildMenuUI = {
+            show: function() {
+                buildMenu.style.display = 'block';
+            },
+            hide: function() {
+                buildMenu.style.display = 'none';
+            },
+            update: updateBuildMenu
+        };
+    });
+</script>
+
+<!-- Import Three.js from CDN -->
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+    }
+}
+</script>
+<script type="module" src="{{ url_for('static', filename='js/game.js') }}"></script>
 {% endblock %}

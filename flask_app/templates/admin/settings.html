@@ -19,6 +19,7 @@
             <li><a href="{{ url_for('admin.index') }}"><i class="fas fa-home"></i> Dashboard</a></li>
             <li><a href="{{ url_for('admin.settings') }}" class="active"><i class="fas fa-cog"></i> Game Settings</a></li>
             <li><a href="{{ url_for('admin.users') }}"><i class="fas fa-users"></i> Manage Users</a></li>
+            <li><a href="{{ url_for('admin.user_resources') }}"><i class="fas fa-coins"></i> User Resources</a></li>
             <li><a href="{{ url_for('main.index') }}"><i class="fas fa-arrow-left"></i> Back to Site</a></li>
         </ul>
     </div>
@@ -49,15 +50,39 @@
                                 </div>
                                 
                                 <div class="admin-form-group">
+                                    <label for="initial_research_points">Initial Research Points</label>
+                                    <input type="number" id="initial_research_points" name="initial_research_points" value="{{ settings.initial_research_points if settings.initial_research_points else 100 }}">
+                                    <span class="help-text">Research points given to new players</span>
+                                </div>
+                                
+                                <div class="admin-form-group">
+                                    <label for="initial_population">Initial Population</label>
+                                    <input type="number" id="initial_population" name="initial_population" value="{{ settings.initial_population if settings.initial_population else 200 }}">
+                                    <span class="help-text">Population given to new players</span>
+                                </div>
+                                
+                                <div class="admin-form-group">
                                     <label for="mining_rate">Mining Rate</label>
                                     <input type="number" id="mining_rate" name="mining_rate" value="{{ settings.mining_rate }}">
                                     <span class="help-text">Resources generated per mining facility</span>
                                 </div>
                                 
                                 <div class="admin-form-group">
-                                    <label for="mining_interval">Mining Interval (seconds)</label>
+                                    <label for="research_rate">Research Rate</label>
+                                    <input type="number" id="research_rate" name="research_rate" value="{{ settings.research_rate if settings.research_rate else 3 }}">
+                                    <span class="help-text">Research points generated per research outpost</span>
+                                </div>
+                                
+                                <div class="admin-form-group">
+                                    <label for="population_rate">Population Growth Rate</label>
+                                    <input type="number" id="population_rate" name="population_rate" value="{{ settings.population_rate if settings.population_rate else 2 }}">
+                                    <span class="help-text">Population growth per colony base</span>
+                                </div>
+                                
+                                <div class="admin-form-group">
+                                    <label for="mining_interval">Resource Interval (seconds)</label>
                                     <input type="number" id="mining_interval" name="mining_interval" value="{{ settings.mining_interval if settings.mining_interval else 60 }}" min="1" max="3600">
-                                    <span class="help-text">Seconds between mining operations</span>
+                                    <span class="help-text">Seconds between resource generation</span>
                                 </div>
                                 
                                 <h4 class="admin-mb admin-mt">Planet Settings</h4>
@@ -82,31 +107,70 @@
                             </div>
                             
                             <div style="flex: 1;">
-                                <h4 class="admin-mb">Construction Costs</h4>
+                                <h4 class="admin-mb">Building Resource Costs</h4>
                                 
                                 <div class="admin-form-group">
-                                    <label for="mining_facility_cost">Mining Facility Cost</label>
+                                    <label for="mining_facility_cost">Mining Station Resources</label>
                                     <input type="number" id="mining_facility_cost" name="mining_facility_cost" value="{{ settings.mining_facility_cost }}">
-                                    <span class="help-text">Resource cost to build a mining facility</span>
+                                    <span class="help-text">Resource cost for mining facility</span>
                                 </div>
                                 
                                 <div class="admin-form-group">
-                                    <label for="defense_facility_cost">Defense Facility Cost</label>
+                                    <label for="research_facility_cost">Research Outpost Resources</label>
+                                    <input type="number" id="research_facility_cost" name="research_facility_cost" value="{{ settings.research_facility_cost if settings.research_facility_cost else 150 }}">
+                                    <span class="help-text">Resource cost for research outpost</span>
+                                </div>
+                                
+                                <div class="admin-form-group">
+                                    <label for="colony_base_cost">Colony Base Resources</label>
+                                    <input type="number" id="colony_base_cost" name="colony_base_cost" value="{{ settings.colony_base_cost if settings.colony_base_cost else 200 }}">
+                                    <span class="help-text">Resource cost for colony base</span>
+                                </div>
+                                
+                                <div class="admin-form-group">
+                                    <label for="defense_facility_cost">Defense Platform Resources</label>
                                     <input type="number" id="defense_facility_cost" name="defense_facility_cost" value="{{ settings.defense_facility_cost }}">
-                                    <span class="help-text">Resource cost to build a defense facility</span>
-                                </div>
-                                
-                                <!-- Additional settings can be added here -->
-                                <div class="admin-form-group">
-                                    <label for="ship_cost">Ship Construction Cost</label>
-                                    <input type="number" id="ship_cost" name="ship_cost" value="{{ settings.ship_cost if settings.ship_cost else 300 }}">
-                                    <span class="help-text">Resource cost to build a ship</span>
+                                    <span class="help-text">Resource cost for defense platform</span>
                                 </div>
                                 
                                 <div class="admin-form-group">
-                                    <label for="research_facility_cost">Research Facility Cost</label>
-                                    <input type="number" id="research_facility_cost" name="research_facility_cost" value="{{ settings.research_facility_cost if settings.research_facility_cost else 250 }}">
-                                    <span class="help-text">Resource cost to build a research facility</span>
+                                    <label for="fighter_hangar_cost">Fighter Hangar Resources</label>
+                                    <input type="number" id="fighter_hangar_cost" name="fighter_hangar_cost" value="{{ settings.fighter_hangar_cost if settings.fighter_hangar_cost else 500 }}">
+                                    <span class="help-text">Resource cost for fighter hangar</span>
+                                </div>
+                                
+                                <div class="admin-form-group">
+                                    <label for="shipyard_cost">Capital Shipyard Resources</label>
+                                    <input type="number" id="shipyard_cost" name="shipyard_cost" value="{{ settings.shipyard_cost if settings.shipyard_cost else 1000 }}">
+                                    <span class="help-text">Resource cost for capital shipyard</span>
+                                </div>
+                                
+                                <h4 class="admin-mb admin-mt">Building Research Costs</h4>
+                                
+                                <div class="admin-form-group">
+                                    <label for="mining_facility_research_cost">Mining Station Research</label>
+                                    <input type="number" id="mining_facility_research_cost" name="mining_facility_research_cost" value="{{ settings.mining_facility_research_cost if settings.mining_facility_research_cost else 50 }}">
+                                    <span class="help-text">Research cost for mining facility</span>
+                                </div>
+                                
+                                <div class="admin-form-group">
+                                    <label for="research_facility_research_cost">Research Outpost Research</label>
+                                    <input type="number" id="research_facility_research_cost" name="research_facility_research_cost" value="{{ settings.research_facility_research_cost if settings.research_facility_research_cost else 0 }}">
+                                    <span class="help-text">Research cost for research outpost</span>
+                                </div>
+                                
+                                <h4 class="admin-mb admin-mt">Building Population Costs</h4>
+                                
+                                <div class="admin-form-group">
+                                    <label for="mining_facility_population_cost">Mining Station Population</label>
+                                    <input type="number" id="mining_facility_population_cost" name="mining_facility_population_cost" value="{{ settings.mining_facility_population_cost if settings.mining_facility_population_cost else 20 }}">
+                                    <span class="help-text">Population cost for mining facility</span>
+                                </div>
+                                
+                                <div class="admin-form-group">
+                                    <label for="research_facility_population_cost">Research Outpost Population</label>
+                                    <input type="number" id="research_facility_population_cost" name="research_facility_population_cost" value="{{ settings.research_facility_population_cost if settings.research_facility_population_cost else 30 }}">
+                                    <span class="help-text">Population cost for research outpost</span>
                                 </div>
                             </div>
                         </div>
@@ -183,16 +247,37 @@
     // Reset to defaults confirmation
     document.getElementById('resetDefaultsBtn').addEventListener('click', function() {
         if (confirm('Are you sure you want to reset all settings to default values? This cannot be undone.')) {
+            // Initial values
             document.getElementById('initial_resources').value = 500;
+            document.getElementById('initial_research_points').value = 100;
+            document.getElementById('initial_population').value = 200;
+            
+            // Generation rates
             document.getElementById('mining_rate').value = 5;
+            document.getElementById('research_rate').value = 3;
+            document.getElementById('population_rate').value = 2;
             document.getElementById('mining_interval').value = 60;
+            
+            // Planet settings
             document.getElementById('min_planets').value = 5;
             document.getElementById('max_planets').value = 10;
             document.getElementById('orbit_speed_factor').value = 0.000000001;
+            
+            // Resource costs
             document.getElementById('mining_facility_cost').value = 100;
-            document.getElementById('defense_facility_cost').value = 200;
-            document.getElementById('ship_cost').value = 300;
-            document.getElementById('research_facility_cost').value = 250;
+            document.getElementById('research_facility_cost').value = 150;
+            document.getElementById('colony_base_cost').value = 200;
+            document.getElementById('defense_facility_cost').value = 180;
+            document.getElementById('fighter_hangar_cost').value = 500;
+            document.getElementById('shipyard_cost').value = 1000;
+            
+            // Research costs
+            document.getElementById('mining_facility_research_cost').value = 50;
+            document.getElementById('research_facility_research_cost').value = 0;
+            
+            // Population costs
+            document.getElementById('mining_facility_population_cost').value = 20;
+            document.getElementById('research_facility_population_cost').value = 30;
         }
     });
 </script>

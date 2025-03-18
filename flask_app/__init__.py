@@ -2,12 +2,14 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from flask_socketio import SocketIO
 import os
 
 # Initialize extensions
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
+socketio = SocketIO()
 
 def create_app():
     app = Flask(__name__)
@@ -23,6 +25,9 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     
+    # Initialize SocketIO with CORS support and message queue
+    socketio.init_app(app, cors_allowed_origins="*")
+    
     # Register blueprints
     from flask_app.routes.main import main
     from flask_app.routes.auth import auth
@@ -35,4 +40,8 @@ def create_app():
     with app.app_context():
         db.create_all()
     
-    return app
+    # Import socket events (must be after app is initialized)
+    with app.app_context():
+        import flask_app.socket_events
+    
+    return app, socketio

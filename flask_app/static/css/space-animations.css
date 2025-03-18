@@ -1,0 +1,433 @@
+/* Space RTS themed animations and effects */
+
+/* Stars background */
+.space-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+    overflow: hidden;
+    z-index: -1;
+}
+
+@keyframes move-stars {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(-2000px);
+    }
+}
+
+.stars {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 200%;
+    background-image: 
+        radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 230px 190px, #fff, rgba(0,0,0,0));
+    background-repeat: repeat;
+    background-size: 300px 300px;
+    animation: move-stars 120s linear infinite;
+    opacity: 0.3;
+    z-index: -1;
+}
+
+.stars:nth-child(2) {
+    background-image: 
+        radial-gradient(1px 1px at 50px 80px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 120px 40px, #eee, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 170px 120px, #ddd, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 210px 60px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 290px 150px, #fff, rgba(0,0,0,0));
+    animation-delay: -50s;
+    opacity: 0.4;
+}
+
+/* Pulsing glow effect */
+@keyframes pulse-glow {
+    0% {
+        box-shadow: 0 0 5px 2px rgba(0, 150, 255, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 15px 5px rgba(0, 150, 255, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 5px 2px rgba(0, 150, 255, 0.3);
+    }
+}
+
+.pulse-glow {
+    animation: pulse-glow 2s infinite;
+}
+
+/* Hover glow effect for buttons and interactive elements */
+.space-button {
+    background: linear-gradient(to bottom, rgba(20, 40, 80, 0.8), rgba(10, 20, 40, 0.8));
+    color: #a0e0ff;
+    border: 1px solid rgba(0, 100, 255, 0.5);
+    border-radius: 4px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 5px rgba(0, 150, 255, 0.7);
+}
+
+.space-button:hover {
+    background: linear-gradient(to bottom, rgba(30, 60, 100, 0.8), rgba(20, 40, 80, 0.8));
+    text-shadow: 0 0 10px rgba(0, 200, 255, 0.9);
+    box-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.space-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 0 5px rgba(0, 100, 255, 0.7);
+}
+
+/* Faction colors with glowing effect */
+.faction-blue {
+    color: #3498db;
+    text-shadow: 0 0 5px rgba(52, 152, 219, 0.7);
+}
+
+.faction-red {
+    color: #e74c3c;
+    text-shadow: 0 0 5px rgba(231, 76, 60, 0.7);
+}
+
+.faction-green {
+    color: #2ecc71;
+    text-shadow: 0 0 5px rgba(46, 204, 113, 0.7);
+}
+
+/* Animated resource counters */
+@keyframes resource-increment {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+        color: #ffcc00;
+        text-shadow: 0 0 10px rgba(255, 204, 0, 0.8);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.resource-increment {
+    animation: resource-increment 0.5s ease-out;
+}
+
+/* Holographic panel style */
+.holographic-panel {
+    background: rgba(0, 20, 40, 0.7);
+    border: 1px solid rgba(0, 100, 255, 0.5);
+    border-radius: 5px;
+    color: #a0e0ff;
+    box-shadow: 0 0 10px rgba(0, 150, 255, 0.3);
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+
+.holographic-panel:hover {
+    box-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
+}
+
+/* Animated appearance effect */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fade-in-up 0.5s ease-out forwards;
+}
+
+/* Staggered appearance for list items */
+.staggered-item:nth-child(1) { animation-delay: 0.05s; }
+.staggered-item:nth-child(2) { animation-delay: 0.1s; }
+.staggered-item:nth-child(3) { animation-delay: 0.15s; }
+.staggered-item:nth-child(4) { animation-delay: 0.2s; }
+.staggered-item:nth-child(5) { animation-delay: 0.25s; }
+.staggered-item:nth-child(6) { animation-delay: 0.3s; }
+.staggered-item:nth-child(7) { animation-delay: 0.35s; }
+.staggered-item:nth-child(8) { animation-delay: 0.4s; }
+.staggered-item:nth-child(9) { animation-delay: 0.45s; }
+.staggered-item:nth-child(10) { animation-delay: 0.5s; }
+
+/* Scanning line effect for panels */
+@keyframes scan-line {
+    0% {
+        background-position: 0% 0%;
+    }
+    100% {
+        background-position: 0% 100%;
+    }
+}
+
+.scanning-panel {
+    position: relative;
+    overflow: hidden;
+}
+
+.scanning-panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, 
+        rgba(0, 150, 255, 0) 0%,
+        rgba(0, 150, 255, 0.1) 50%,
+        rgba(0, 150, 255, 0) 100%);
+    background-size: 100% 400%;
+    animation: scan-line 4s linear infinite;
+    pointer-events: none;
+}
+
+/* Loading spinner with space theme */
+@keyframes space-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.space-spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(0, 100, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #3498db;
+    animation: space-spin 1s ease-in-out infinite;
+    margin: 20px auto;
+}
+
+/* Alert animations */
+@keyframes alert-pulse {
+    0% {
+        background-color: rgba(231, 76, 60, 0.7);
+    }
+    50% {
+        background-color: rgba(231, 76, 60, 0.9);
+        box-shadow: 0 0 20px rgba(231, 76, 60, 0.7);
+    }
+    100% {
+        background-color: rgba(231, 76, 60, 0.7);
+    }
+}
+
+.space-alert {
+    animation: alert-pulse 2s infinite;
+}
+
+/* Resource bar animations */
+.resource-bar {
+    height: 6px;
+    background: rgba(0, 50, 100, 0.3);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+
+.resource-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, #0078d7, #00a0ff);
+    width: 0;
+    transition: width 1s ease-out;
+    position: relative;
+}
+
+.resource-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, 
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0) 100%);
+    animation: scan-line 2s linear infinite;
+}
+
+/* Animated notification */
+@keyframes notification-slide {
+    0% {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    10% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    90% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+}
+
+.space-notification {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 100, 200, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 0 0 5px 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    animation: notification-slide 5s forwards;
+}
+
+/* Planet rotation animation */
+@keyframes rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.planet-rotation {
+    animation: rotate 60s linear infinite;
+}
+
+/* Hover card effect */
+.hover-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 20px rgba(0, 150, 255, 0.3);
+    z-index: 2;
+}
+
+/* Animated checkbox */
+.space-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: rgba(0, 20, 40, 0.7);
+    border: 1px solid rgba(0, 100, 255, 0.5);
+    border-radius: 3px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.space-checkbox:checked {
+    background: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.7);
+}
+
+.space-checkbox:checked::before {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+}
+
+/* Thruster animation for ships */
+@keyframes thruster-glow {
+    0% {
+        box-shadow: 0 0 5px 2px rgba(255, 100, 0, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 10px 5px rgba(255, 150, 0, 0.9);
+    }
+    100% {
+        box-shadow: 0 0 5px 2px rgba(255, 100, 0, 0.7);
+    }
+}
+
+.thruster {
+    background: #ff6600;
+    width: 6px;
+    height: 3px;
+    border-radius: 50% 50% 0 0;
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: thruster-glow 0.5s infinite;
+}
+
+/* Grid overlay effect for UI elements */
+.grid-overlay {
+    background-image: linear-gradient(rgba(0, 100, 255, 0.1) 1px, transparent 1px),
+                     linear-gradient(90deg, rgba(0, 100, 255, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: center center;
+}
+
+/* Breathing effect for UI panels */
+@keyframes breathing-glow {
+    0% {
+        box-shadow: 0 0 5px rgba(0, 150, 255, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(0, 150, 255, 0.3);
+    }
+}
+
+.breathing-panel {
+    animation: breathing-glow 4s infinite ease-in-out;
+}
+
+/* Background nebula effect */
+.nebula-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle at 20% 30%, rgba(52, 152, 219, 0.2) 0%, transparent 50%),
+                     radial-gradient(circle at 70% 60%, rgba(231, 76, 60, 0.2) 0%, transparent 50%),
+                     radial-gradient(circle at 40% 80%, rgba(46, 204, 113, 0.2) 0%, transparent 50%);
+    z-index: -2;
+    background-size: 200% 200%;
+    animation: nebula-move 60s infinite alternate ease-in-out;
+}
+
+@keyframes nebula-move {
+    0% {
+        background-position: 0% 0%;
+    }
+    100% {
+        background-position: 100% 100%;
+    }
+}
