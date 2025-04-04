@@ -122,10 +122,26 @@ class MassGravity {
         this.updateLoadingProgress(10);
         
         try {
+            // Get current user info for material caching
+            const userResponse = await fetch('/api/user_info');
+            let userId = 'default';
+            
+            try {
+                const userData = await userResponse.json();
+                userId = userData.id || 'default';
+                console.log("User identified for texture caching:", userId);
+            } catch (userError) {
+                console.warn("Could not get user info for texture caching:", userError);
+            }
+            
+            // Load game data
             const response = await fetch('/api/load_game');
             const data = await response.json();
             
             if (Object.keys(data).length > 0) {
+                // Add userId to game state for material caching
+                data.userId = userId;
+                
                 gameState = data;
                 window.gameState = gameState; // Update global reference
                 this.gameState = gameState; // Update instance reference
@@ -135,6 +151,10 @@ class MassGravity {
                 this.updateResourceDisplay();
             } else {
                 console.log("No saved game found, starting new game");
+                
+                // Still set userId for new games
+                gameState.userId = userId;
+                window.gameState = gameState;
             }
         } catch (error) {
             console.error("Error loading game:", error);

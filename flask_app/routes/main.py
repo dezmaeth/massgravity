@@ -85,3 +85,13 @@ def game_settings():
         'red_material_rate': settings.red_material_rate,
         'green_material_rate': settings.green_material_rate
     })
+    
+@main.route('/api/user_info', methods=['GET'])
+@login_required
+def user_info():
+    """Return basic user info for client-side caching"""
+    return jsonify({
+        'id': current_user.id,
+        'username': current_user.username,
+        'faction': current_user.faction
+    })

@@ -47,8 +47,10 @@ export class Planet {
             }
         };
 
+        // Create the planet
         this.createPlanet();
         
+        // Add atmosphere and clouds if needed
         if (this.options.hasAtmosphere) {
             this.createAtmosphere();
             this.createClouds();
@@ -66,11 +68,16 @@ export class Planet {
         
         return this.container;
     }
+    
+    // No longer needed - initialization is now synchronous
 
     determineClimateType() {
         // Get climate zone using the material generator
         const climateZone = materialGenerator.getClimateZone(this.options.distanceFromSun);
         this.options.climate = climateZone.name;
+        
+        console.log(`Planet at distance ${this.options.distanceFromSun} has climate: ${climateZone.name}`);
+        console.log(`Climate colors: land=${climateZone.colors.land.toString(16)}, water=${climateZone.colors.water.toString(16)}`);
         
         // Adjust planet features based on climate
         if (this.options.climate === 'desert') {
@@ -90,13 +97,20 @@ export class Planet {
             this.options.detail
         );
 
-        // Generate materials using the procedural generator
+        // Get user ID from game state if available
+        let userId = 'default';
+        if (window.gameState && window.gameState.userId) {
+            userId = window.gameState.userId;
+        }
+
+        // Generate materials using the procedural generator with user ID for caching
         const planetMaterials = materialGenerator.generatePlanetMaterial({
             distanceFromSun: this.options.distanceFromSun,
             radius: this.options.radius,
             seed: this.options.seed,
             hasOcean: this.options.hasOcean,
-            oceanLevel: this.options.oceanLevel
+            oceanLevel: this.options.oceanLevel,
+            userId: userId
         });
 
         // Create main planet mesh
@@ -104,25 +118,19 @@ export class Planet {
         this.planetMesh.castShadow = true;
         this.planetMesh.receiveShadow = true;
         this.container.add(this.planetMesh);
+        
+        // Store generated textures for animation
+        this.planetTextures = planetMaterials.textures;
+        
+        console.log(`Planet material created for ${this.options.name}`);
 
         // Apply random rotation
         this.planetMesh.rotation.x = Math.random() * Math.PI;
         this.planetMesh.rotation.y = Math.random() * Math.PI;
         this.planetMesh.rotation.z = Math.random() * Math.PI;
 
-        // Add ocean if the planet has one
-        if (this.options.hasOcean && planetMaterials.oceanMaterial) {
-            const oceanGeometry = new THREE.SphereGeometry(
-                this.options.radius * 1.001, // Slightly larger than the planet
-                this.options.detail,
-                this.options.detail
-            );
-            
-            this.oceanMesh = new THREE.Mesh(oceanGeometry, planetMaterials.oceanMaterial);
-            this.oceanMesh.castShadow = false;
-            this.oceanMesh.receiveShadow = true;
-            this.container.add(this.oceanMesh);
-        }
+        // Ocean temporarily disabled due to rendering issues
+        this.oceanMesh = null;
         
         // Store generated textures for animation
         this.planetTextures = planetMaterials.textures;
@@ -446,16 +454,7 @@ export class Planet {
             this.cloudMesh.rotation.y += this.options.cloudSpeed * delta;
         }
         
-        // Rotate ocean if it exists
-        if (this.oceanMesh) {
-            // Rotate ocean slightly slower than the planet
-            this.oceanMesh.rotation.y += this.options.rotationSpeed * 0.8 * delta;
-            
-            // Animate ocean waves if material is available (future enhancement)
-            // if (this.oceanMesh.material.uniforms && this.oceanMesh.material.uniforms.time) {
-            //     this.oceanMesh.material.uniforms.time.value += delta * 0.001;
-            // }
-        }
+        // Ocean animation disabled
         
         // Animate atmosphere if needed
         if (this.innerAtmosphere) {

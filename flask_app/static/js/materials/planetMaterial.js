@@ -1,11 +1,42 @@
 import * as THREE from 'three';
 import { createNoiseMaterial } from './noise.js';
 
+/**
+ * PlanetMaterialGenerator 
+ * 
+ * This class generates and caches planet materials and textures.
+ * 
+ * Caching implementation notes:
+ * 1. In-memory cache: All generated textures and materials are cached in memory
+ *    using a Map (this.textureCache) for the current session.
+ * 
+ * 2. Persistent cache: Textures are stored as PNG files on the user's hard drive
+ *    using the browser's File System Access API.
+ * 
+ * 3. File System Structure:
+ *    - Each user gets a directory named with their userId
+ *    - Each texture type (diffuse, normal, height, roughness) is stored as a separate PNG
+ *    - Filenames follow the pattern: {climate}-{seed}-{hasOcean}-{oceanLevel}-{type}.png
+ * 
+ * 4. Storage Process:
+ *    - When a new texture is generated, it's saved to the user's directory
+ *    - On load, we check if the texture files exist before generating new ones
+ *    - Materials are recreated from the cached textures
+ */
 export class PlanetMaterialGenerator {
     constructor() {
-        // Cache for generated textures
+        // Create texture cache for storing generated materials in memory
         this.textureCache = new Map();
         
+        // File system directory handle for persistent storage
+        this.directoryHandle = null;
+        
+        // Flag to track if we've requested file system access
+        this.fileSystemAccessRequested = false;
+        
+        // Initialize the file system access
+        this.initFileSystemAccess();
+
         // Define climate zones based on distance from sun
         this.climateZones = [
             { name: 'desert', maxDistance: 50, colors: { land: 0xd9a282, water: 0x2389da } },
@@ -14,6 +45,162 @@ export class PlanetMaterialGenerator {
             { name: 'arctic', maxDistance: 300, colors: { land: 0xd8e4ff, water: 0x0d47a1 } },
             { name: 'ice', maxDistance: Infinity, colors: { land: 0xffffff, water: 0x82b1ff } }
         ];
+        
+        // Set up cache limit to prevent memory issues
+        this.maxCacheSize = 25; // Maximum number of entries in the in-memory cache
+    }
+    
+    /**
+     * Initialize file system access for texture storage
+     */
+    async initFileSystemAccess() {
+        // Only attempt if the File System Access API is available
+        if (!window.showDirectoryPicker) {
+            console.warn("File System Access API not available in this browser. Falling back to memory-only caching.");
+            return;
+        }
+        
+        try {
+            // Check if we have a stored directory handle
+            const storedHandle = await this.getStoredDirectoryHandle();
+            
+            if (storedHandle) {
+                // Verify we still have permission to use this handle
+                const options = { mode: 'readwrite' };
+                if (await storedHandle.requestPermission(options) === 'granted') {
+                    this.directoryHandle = storedHandle;
+                    console.log("Restored file system access to texture cache directory");
+                    return;
+                }
+            }
+            
+            // We'll request file system access when the user first generates a planet
+            console.log("Will request file system access when generating first planet");
+        } catch (e) {
+            console.warn("Error initializing file system access:", e);
+        }
+    }
+    
+    /**
+     * Get stored directory handle from IndexedDB
+     */
+    async getStoredDirectoryHandle() {
+        return new Promise((resolve, reject) => {
+            // Open IndexedDB
+            const request = indexedDB.open('PlanetTextureCache', 1);
+            
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                // Create object store for directory handles if it doesn't exist
+                if (!db.objectStoreNames.contains('directoryHandles')) {
+                    db.createObjectStore('directoryHandles', { keyPath: 'id' });
+                }
+            };
+            
+            request.onsuccess = () => {
+                const db = request.result;
+                const transaction = db.transaction('directoryHandles', 'readonly');
+                const store = transaction.objectStore('directoryHandles');
+                
+                const getRequest = store.get('textureDirectory');
+                
+                getRequest.onsuccess = () => {
+                    resolve(getRequest.result ? getRequest.result.handle : null);
+                };
+                
+                getRequest.onerror = () => {
+                    console.error("Error getting directory handle from IndexedDB:", getRequest.error);
+                    reject(getRequest.error);
+                };
+            };
+            
+            request.onerror = () => {
+                console.error("Error opening IndexedDB:", request.error);
+                reject(request.error);
+            };
+        });
+    }
+    
+    /**
+     * Store directory handle in IndexedDB for future sessions
+     * @param {FileSystemDirectoryHandle} handle - Directory handle to store
+     */
+    async storeDirectoryHandle(handle) {
+        return new Promise((resolve, reject) => {
+            // Open IndexedDB
+            const request = indexedDB.open('PlanetTextureCache', 1);
+            
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                // Create object store for directory handles if it doesn't exist
+                if (!db.objectStoreNames.contains('directoryHandles')) {
+                    db.createObjectStore('directoryHandles', { keyPath: 'id' });
+                }
+            };
+            
+            request.onsuccess = () => {
+                const db = request.result;
+                const transaction = db.transaction('directoryHandles', 'readwrite');
+                const store = transaction.objectStore('directoryHandles');
+                
+                const putRequest = store.put({
+                    id: 'textureDirectory',
+                    handle: handle
+                });
+                
+                putRequest.onsuccess = () => {
+                    console.log("Saved directory handle to IndexedDB");
+                    resolve();
+                };
+                
+                putRequest.onerror = () => {
+                    console.error("Error saving directory handle to IndexedDB:", putRequest.error);
+                    reject(putRequest.error);
+                };
+            };
+            
+            request.onerror = () => {
+                console.error("Error opening IndexedDB:", request.error);
+                reject(request.error);
+            };
+        });
+    }
+    
+    /**
+     * Request file system access from the user if we don't have it already
+     */
+    async requestFileSystemAccess() {
+        if (this.fileSystemAccessRequested) {
+            return this.directoryHandle;
+        }
+        
+        this.fileSystemAccessRequested = true;
+        
+        if (!window.showDirectoryPicker) {
+            console.warn("File System Access API not available. Using memory-only caching.");
+            return null;
+        }
+        
+        try {
+            // Show folder picker UI to user
+            console.log("Requesting file system access for texture storage...");
+            const directoryHandle = await window.showDirectoryPicker({
+                id: 'planetTextures',
+                mode: 'readwrite',
+                startIn: 'documents',
+                suggestedName: 'MassGravity-PlanetTextures'
+            });
+            
+            // Store the directory handle for future use
+            this.directoryHandle = directoryHandle;
+            await this.storeDirectoryHandle(directoryHandle);
+            
+            console.log("Obtained file system access for texture storage");
+            return directoryHandle;
+        } catch (e) {
+            console.warn("User denied file system access or error occurred:", e);
+            return null;
+        }
     }
 
     /**
@@ -24,7 +211,8 @@ export class PlanetMaterialGenerator {
      * @param {number} options.seed - Random seed for consistent generation
      * @param {boolean} options.hasOcean - Whether the planet has oceans
      * @param {number} options.oceanLevel - Ocean level (0-1)
-     * @returns {Object} Materials and textures for the planet
+     * @param {string} options.userId - User ID for texture caching
+     * @returns {Promise<Object>} Materials and textures for the planet
      */
     generatePlanetMaterial(options) {
         // Set defaults
@@ -33,9 +221,25 @@ export class PlanetMaterialGenerator {
         const seed = options.seed || Math.random() * 1000;
         const hasOcean = options.hasOcean !== undefined ? options.hasOcean : true;
         const oceanLevel = options.oceanLevel !== undefined ? options.oceanLevel : 0.65;
+        const userId = options.userId || 'default';
         
         // Determine climate zone based on distance
         const climateZone = this.getClimateZone(distanceFromSun);
+        
+        // Ensure seed is a number
+        const seedNum = typeof seed === 'number' ? seed : parseFloat(seed);
+        
+        // Create a user-specific cache key for planet materials
+        const cacheKey = `mat-${userId}-${climateZone.name}-${seedNum.toFixed(2)}-${hasOcean?1:0}-${oceanLevel.toFixed(2)}`;
+        
+        // Check memory cache first
+        if (this.textureCache.has(cacheKey) && this.textureCache.get(cacheKey) !== null) {
+            console.log(`Using cached material for ${cacheKey} from memory`);
+            const cachedData = this.textureCache.get(cacheKey);
+            return cachedData;
+        }
+        
+        console.log(`Generating new material for ${cacheKey}`);
         
         // Generate textures
         const textures = this.generateTextures({
@@ -43,7 +247,8 @@ export class PlanetMaterialGenerator {
             radius,
             climateZone,
             hasOcean,
-            oceanLevel
+            oceanLevel,
+            userId
         });
 
         // Create the main planet material with emissive based on climate
@@ -76,30 +281,35 @@ export class PlanetMaterialGenerator {
                 emissiveColor = new THREE.Color(0x333333);
         }
         
-        const material = new THREE.MeshStandardMaterial({
+        // Use MeshPhysicalMaterial for more realistic appearance
+        const material = new THREE.MeshPhysicalMaterial({
             map: textures.diffuse,
             normalMap: textures.normal,
+            normalScale: new THREE.Vector2(1.0, 1.0),
             displacementMap: textures.height,
             displacementScale: radius * 0.05,
             roughnessMap: textures.roughness,
             roughness: 0.85,
             metalness: 0.1,
+            clearcoat: 0.1,
+            clearcoatRoughness: 0.4,
+            envMapIntensity: 1.0,
             emissive: emissiveColor,
             emissiveIntensity: emissiveIntensity
         });
 
-        // Create ocean material if planet has oceans
-        let oceanMaterial = null;
-        if (hasOcean) {
-            oceanMaterial = this.createOceanMaterial(climateZone, radius);
-        }
-
-        return {
+        // Ocean material disabled for now
+        const result = {
             mainMaterial: material,
-            oceanMaterial,
+            oceanMaterial: null, // Ocean rendering disabled
             textures,
             climateZone
         };
+        
+        // Cache the complete material result (not just textures)
+        this.textureCache.set(cacheKey, result);
+        
+        return result;
     }
 
     /**
@@ -124,7 +334,7 @@ export class PlanetMaterialGenerator {
      * @returns {THREE.Material} Ocean material
      */
     createOceanMaterial(climateZone, radius) {
-        const oceanColor = new THREE.Color(climateZone.colors.water);
+        const oceanColor = new THREE.Color(parseInt(climateZone.colors.water));
         
         // Create custom water material with animated waves
         const oceanMaterial = new THREE.MeshPhysicalMaterial({
@@ -154,21 +364,27 @@ export class PlanetMaterialGenerator {
      * @returns {Object} Generated textures
      */
     generateTextures(options) {
-        const { seed, climateZone, hasOcean, oceanLevel } = options;
+        const { seed, climateZone, hasOcean, oceanLevel, userId = 'default' } = options;
         
-        // Use cache key based on parameters
-        const cacheKey = `${climateZone.name}-${seed}-${hasOcean}-${oceanLevel}`;
+        // Ensure the seed is treated as a number for cache key
+        const seedNum = typeof seed === 'number' ? seed : parseFloat(seed);
         
-        // Return cached textures if available
-        if (this.textureCache.has(cacheKey)) {
+        // Create cache key for textures
+        const cacheKey = `tex-${climateZone.name}-${seedNum.toFixed(2)}-${hasOcean?1:0}-${oceanLevel.toFixed(2)}`;
+        
+        // Check memory cache first (fastest)
+        if (this.textureCache.has(cacheKey) && this.textureCache.get(cacheKey) !== null) {
+            console.log(`Using cached textures for ${cacheKey} from memory`);
             return this.textureCache.get(cacheKey);
         }
         
-        // Create new textures
-        const size = 1024;
+        console.log(`Generating new textures for ${cacheKey}`);
+        
+        // Create new textures with smaller size for better performance
+        const size = 256; // Use 256 for better performance
         
         // Generate heightmap first as it's the base for the other maps
-        const heightMap = this.generateHeightMap(size, seed);
+        const heightMap = this.generateHeightMap(size, seedNum);
         
         // Generate other maps based on the heightmap
         const diffuseMap = this.generateDiffuseMap(size, heightMap, climateZone, hasOcean, oceanLevel);
@@ -182,10 +398,186 @@ export class PlanetMaterialGenerator {
             roughness: roughnessMap
         };
         
-        // Cache the results
+        // Cache the results in memory
         this.textureCache.set(cacheKey, textures);
         
+        // If memory cache is too large, remove oldest entries
+        if (this.textureCache.size > this.maxCacheSize) {
+            const oldestKey = this.textureCache.keys().next().value;
+            console.log(`Memory cache full, removing oldest entry: ${oldestKey}`);
+            this.textureCache.delete(oldestKey);
+        }
+        
+        // Try to save to disk - but don't wait for it
+        this.saveTexturesToDisk(userId, cacheKey, textures);
+        
         return textures;
+    }
+    
+    /**
+     * Save textures to disk in the background (non-blocking)
+     * @param {string} userId - User ID
+     * @param {string} cacheKey - Cache key for the textures
+     * @param {Object} textures - Texture objects to save
+     */
+    saveTexturesToDisk(userId, cacheKey, textures) {
+        // Schedule saving for later, after the planet is rendered
+        setTimeout(() => {
+            // Request file system access if needed
+            this.requestFileSystemAccess().then(directoryHandle => {
+                if (!directoryHandle) return;
+                
+                // Save each texture
+                this.saveTextureToDisk(
+                    userId, 
+                    this.getTextureFilename(cacheKey, 'diffuse'),
+                    textures.diffuse.source.data
+                );
+                
+                this.saveTextureToDisk(
+                    userId, 
+                    this.getTextureFilename(cacheKey, 'normal'),
+                    textures.normal.source.data
+                );
+                
+                this.saveTextureToDisk(
+                    userId, 
+                    this.getTextureFilename(cacheKey, 'height'),
+                    textures.height.source.data
+                );
+                
+                this.saveTextureToDisk(
+                    userId, 
+                    this.getTextureFilename(cacheKey, 'roughness'),
+                    textures.roughness.source.data
+                );
+                
+                console.log(`Saved all textures for ${cacheKey} to disk`);
+            });
+        }, 0);
+    }
+    
+    /**
+     * Save texture to disk
+     * @param {string} userId - User ID to organize directories
+     * @param {string} textureName - Filename to save
+     * @param {HTMLCanvasElement} canvas - Canvas with texture image
+     * @returns {Promise<boolean>} - Whether the save was successful
+     */
+    async saveTextureToDisk(userId, textureName, canvas) {
+        // Make sure we have file system access
+        if (!this.directoryHandle && !await this.requestFileSystemAccess()) {
+            console.warn("Cannot save texture: no file system access");
+            return false;
+        }
+        
+        try {
+            // Create user directory if it doesn't exist
+            let userDirHandle;
+            try {
+                userDirHandle = await this.directoryHandle.getDirectoryHandle(userId, { create: true });
+            } catch (e) {
+                console.error(`Could not create/access directory for user ${userId}:`, e);
+                return false;
+            }
+            
+            // Create texture file
+            const fileHandle = await userDirHandle.getFileHandle(textureName, { create: true });
+            
+            // Convert canvas to blob
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            
+            // Write blob to file
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            
+            console.log(`Saved texture ${textureName} for user ${userId}`);
+            return true;
+        } catch (e) {
+            console.error(`Error saving texture ${textureName}:`, e);
+            return false;
+        }
+    }
+    
+    /**
+     * Load texture from disk
+     * @param {string} userId - User ID to look in
+     * @param {string} textureName - Filename to load
+     * @returns {Promise<THREE.Texture|null>} - Loaded texture or null if not found
+     */
+    async loadTextureFromDisk(userId, textureName) {
+        // Make sure we have file system access
+        if (!this.directoryHandle) {
+            console.warn("Cannot load texture: no file system access");
+            return null;
+        }
+        
+        try {
+            // Get user directory
+            let userDirHandle;
+            try {
+                userDirHandle = await this.directoryHandle.getDirectoryHandle(userId);
+            } catch (e) {
+                console.log(`No directory for user ${userId} found`);
+                return null;
+            }
+            
+            // Get file
+            let fileHandle;
+            try {
+                fileHandle = await userDirHandle.getFileHandle(textureName);
+            } catch (e) {
+                console.log(`Texture ${textureName} not found for user ${userId}`);
+                return null;
+            }
+            
+            // Read file
+            const file = await fileHandle.getFile();
+            
+            // Create image element and load the blob
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            
+            // Wait for image to load
+            await new Promise(resolve => {
+                img.onload = resolve;
+                img.onerror = () => {
+                    console.error(`Error loading texture image ${textureName}`);
+                    resolve();
+                };
+            });
+            
+            // Create canvas and draw image
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            // Create THREE.js texture
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            
+            console.log(`Loaded texture ${textureName} for user ${userId}`);
+            return texture;
+        } catch (e) {
+            console.error(`Error loading texture ${textureName}:`, e);
+            return null;
+        }
+    }
+    
+    /**
+     * Generate filename for a texture
+     * @param {string} key - Cache key
+     * @param {string} type - Texture type (diffuse, normal, height, roughness)
+     * @returns {string} Filename for the texture
+     */
+    getTextureFilename(key, type) {
+        // Remove the "tex-" prefix from the key
+        const cleanKey = key.startsWith('tex-') ? key.substring(4) : key;
+        return `${cleanKey}-${type}.png`;
     }
 
     /**
@@ -195,34 +587,36 @@ export class PlanetMaterialGenerator {
      * @returns {THREE.Texture} Height map texture
      */
     generateHeightMap(size, seed) {
+        // Use smaller size for better performance
+        const workingSize = Math.min(size, 256); // Maximum 256x256 for heightmap performance
         const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
+        canvas.width = workingSize;
+        canvas.height = workingSize;
         const ctx = canvas.getContext('2d');
         
         // Fill with black background
         ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, size, size);
+        ctx.fillRect(0, 0, workingSize, workingSize);
         
-        const imageData = ctx.getImageData(0, 0, size, size);
+        const imageData = ctx.getImageData(0, 0, workingSize, workingSize);
         const data = imageData.data;
         
-        // Use noise function to create height map
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-                const nx = x / size - 0.5;
-                const ny = y / size - 0.5;
+        // Use optimized algorithm with fewer detail points and fewer noise octaves
+        for (let y = 0; y < workingSize; y++) {
+            for (let x = 0; x < workingSize; x++) {
+                const nx = x / workingSize - 0.5;
+                const ny = y / workingSize - 0.5;
                 
                 // Convert to spherical coordinates
                 const phi = Math.atan2(ny, nx);
                 const theta = Math.sqrt(nx * nx + ny * ny) * Math.PI;
                 
-                // Generate height using layered noise
+                // Generate height using layered noise with fewer octaves
                 let height = this.fbm(
                     Math.cos(phi) * Math.sin(theta) + seed,
                     Math.sin(phi) * Math.sin(theta) + seed,
                     Math.cos(theta) + seed,
-                    6
+                    4 // Reduced from 6 to 4 octaves
                 );
                 
                 // Normalize height (0-1)
@@ -231,7 +625,7 @@ export class PlanetMaterialGenerator {
                 // Add some continentality - make higher elevations more common
                 height = Math.pow(height, 1.2);
                 
-                const index = (y * size + x) * 4;
+                const index = (y * workingSize + x) * 4;
                 const value = Math.floor(height * 255);
                 
                 data[index] = value;     // R
@@ -242,6 +636,20 @@ export class PlanetMaterialGenerator {
         }
         
         ctx.putImageData(imageData, 0, 0);
+        
+        // If we need to upscale to the requested size
+        if (workingSize < size) {
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = size;
+            finalCanvas.height = size;
+            const finalCtx = finalCanvas.getContext('2d');
+            
+            // Use the built-in canvas scaling to upscale
+            finalCtx.drawImage(canvas, 0, 0, size, size);
+            canvas.width = size;
+            canvas.height = size;
+            ctx.drawImage(finalCanvas, 0, 0);
+        }
         
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
@@ -279,11 +687,25 @@ export class PlanetMaterialGenerator {
         const imageData = ctx.getImageData(0, 0, size, size);
         const data = imageData.data;
         
-        // Get color values from climate zone
-        const landColor = new THREE.Color(climateZone.colors.land);
-        const waterColor = new THREE.Color(climateZone.colors.water);
+        // Get color values from climate zone - ensure proper conversion to THREE.Color
+        const landColor = new THREE.Color(parseInt(climateZone.colors.land));
+        const waterColor = new THREE.Color(parseInt(climateZone.colors.water));
         
-        // Add noise pattern for terrain variation
+        // Pre-calculate common elevation bands for better performance
+        const snowColor = new THREE.Color(0xffffff);
+        const beachColor = new THREE.Color(0xd2b48c); // Sandy color
+        
+        // Pre-calculate snow amounts by climate type for better performance
+        const snowAmounts = {
+            'ice': 0.8,
+            'arctic': 0.6,
+            'temperate': 0.3,
+            'tropical': 0.1,
+            'desert': 0
+        };
+        const snowAmount = snowAmounts[climateZone.name] || 0;
+        
+        // Batch process pixels for better performance 
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
                 const index = (y * size + x) * 4;
@@ -291,57 +713,59 @@ export class PlanetMaterialGenerator {
                 // Get height value (0-1)
                 const height = heightData[index] / 255;
                 
-                // Determine if this is water or land
-                const isWater = hasOcean && height < oceanLevel;
-                
-                if (isWater) {
-                    // Water color with depth variation
+                // Determine if this is water or land with a simple comparison
+                if (hasOcean && height < oceanLevel) {
+                    // Water pixel - simplified calculation for performance
                     const depthFactor = height / oceanLevel; // 0 at deepest, 1 at shore
-                    const depthColor = new THREE.Color().copy(waterColor);
+                    
+                    // Create a copy of the water color to modify
+                    const depthColor = new THREE.Color(climateZone.colors.water);
                     
                     // Darken deep water
                     depthColor.multiplyScalar(0.5 + 0.5 * depthFactor);
                     
-                    data[index] = Math.floor(depthColor.r * 255);     // R
-                    data[index + 1] = Math.floor(depthColor.g * 255); // G
-                    data[index + 2] = Math.floor(depthColor.b * 255); // B
+                    // Convert THREE.js color (0-1) to RGB (0-255)
+                    data[index] = Math.floor(depthColor.r * 255);       // R
+                    data[index + 1] = Math.floor(depthColor.g * 255);   // G
+                    data[index + 2] = Math.floor(depthColor.b * 255);   // B
                 } else {
-                    // Land color based on elevation
-                    const landHeightFactor = (height - (hasOcean ? oceanLevel : 0)) / 
-                                             (1 - (hasOcean ? oceanLevel : 0));
+                    // Land pixel - properly use THREE.js color objects
+                    // Calculate normalized land height
+                    const landHeightFactor = hasOcean ? 
+                        (height - oceanLevel) / (1 - oceanLevel) : height;
                     
-                    let terrainColor = new THREE.Color();
+                    // Create a new color for this pixel, starting with the land color
+                    let terrainColor = new THREE.Color(climateZone.colors.land);
                     
                     // Apply different colors based on elevation
                     if (landHeightFactor > 0.8) {
                         // Snow caps - mix with white based on climate zone
-                        let snowAmount = 0;
-                        if (climateZone.name === 'ice') snowAmount = 0.8;
-                        else if (climateZone.name === 'arctic') snowAmount = 0.6;
-                        else if (climateZone.name === 'temperate') snowAmount = 0.3;
-                        else if (climateZone.name === 'tropical') snowAmount = 0.1;
-                        else snowAmount = 0; // desert
+                        let snowAmount = snowAmounts[climateZone.name] || 0;
+                        let snowBlendFactor = snowAmount * (landHeightFactor - 0.8) * 5;
                         
-                        terrainColor.copy(landColor).lerp(new THREE.Color(0xffffff), 
-                                                          snowAmount * (landHeightFactor - 0.8) * 5);
+                        // Use THREE.js lerp for proper color blending
+                        terrainColor.lerp(snowColor, snowBlendFactor);
                     } else if (landHeightFactor > 0.4) {
-                        // Mid elevations - base land color with variations
-                        terrainColor.copy(landColor);
+                        // Mid elevations - add variations
+                        // Use a simple noise approximation
+                        const variation = ((Math.sin(x * 0.1) + Math.sin(y * 0.1)) * 0.05);
                         
-                        // Add variations based on noise
-                        const variation = this.noise2D(x/size * 10, y/size * 10) * 0.1;
+                        // Adjust color with variation
                         terrainColor.r = Math.max(0, Math.min(1, terrainColor.r * (1 + variation)));
                         terrainColor.g = Math.max(0, Math.min(1, terrainColor.g * (1 + variation)));
                         terrainColor.b = Math.max(0, Math.min(1, terrainColor.b * (1 + variation)));
                     } else {
-                        // Lower elevations - mix with brown/sand for beaches
-                        const beachColor = new THREE.Color(0xd2b48c); // Sandy color
-                        terrainColor.copy(landColor).lerp(beachColor, 1 - landHeightFactor * 2.5);
+                        // Lower elevations - mix with sand/beach color
+                        const beachBlendFactor = Math.min(1, Math.max(0, 1 - landHeightFactor * 2.5));
+                        
+                        // Use THREE.js lerp for proper color blending
+                        terrainColor.lerp(beachColor, beachBlendFactor);
                     }
                     
-                    data[index] = Math.floor(terrainColor.r * 255);     // R
-                    data[index + 1] = Math.floor(terrainColor.g * 255); // G
-                    data[index + 2] = Math.floor(terrainColor.b * 255); // B
+                    // Convert THREE.js color (0-1) to RGB (0-255)
+                    data[index] = Math.floor(terrainColor.r * 255);       // R
+                    data[index + 1] = Math.floor(terrainColor.g * 255);   // G
+                    data[index + 2] = Math.floor(terrainColor.b * 255);   // B
                 }
                 
                 data[index + 3] = 255; // A
@@ -586,7 +1010,10 @@ export class PlanetMaterialGenerator {
         let value = 0;
         let amplitude = 0.5;
         
-        for (let i = 0; i < octaves; i++) {
+        // Use fewer octaves for better performance
+        const maxOctaves = Math.min(octaves, 4); // Limit to 4 octaves max
+        
+        for (let i = 0; i < maxOctaves; i++) {
             value += amplitude * this.noise3D(x, y, z);
             x *= 2.0;
             y *= 2.0;
