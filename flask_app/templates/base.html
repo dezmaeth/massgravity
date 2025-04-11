@@ -11,11 +11,11 @@
 <body>
     <header>
         <nav>
-            <div class="brand">Mass Gravity</div>
+            <div class="brand"></div>
             <ul>
                 <li><a href="{{ url_for('main.index') }}">Home</a></li>
                 {% if current_user.is_authenticated %}
-                <li><a href="{{ url_for('main.game') }}">Play Game</a></li>
+                <li><a href="{{ url_for('main.build') }}">Play Game</a></li>
                 <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
                 {% else %}
                 <li><a href="{{ url_for('auth.login') }}">Login</a></li>

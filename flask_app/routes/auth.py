@@ -12,8 +12,8 @@ def login():
     
     if current_user.is_authenticated:
         if is_ajax:
-            return jsonify({'success': True, 'redirect': url_for('main.game')})
-        return redirect(url_for('main.game'))
+            return jsonify({'success': True, 'redirect': url_for('main.build')})
+        return redirect(url_for('main.build'))
     
     if request.method == 'POST':
         username = request.form.get('username')
@@ -28,10 +28,10 @@ def login():
                 return jsonify({
                     'success': True, 
                     'message': 'Welcome back, Commander ' + username + '!',
-                    'redirect': next_page or url_for('main.game')
+                    'redirect': next_page or url_for('main.build')
                 })
             
-            return redirect(next_page or url_for('main.game'))
+            return redirect(next_page or url_for('main.build'))
         
         # Login failed
         if is_ajax:
@@ -48,8 +48,8 @@ def login():
 def register():
     if current_user.is_authenticated:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': True, 'redirect': url_for('main.game')})
-        return redirect(url_for('main.game'))
+            return jsonify({'success': True, 'redirect': url_for('main.build')})
+        return redirect(url_for('main.build'))
     
     if request.method == 'POST':
         username = request.form.get('username')
@@ -91,9 +91,9 @@ def register():
         login_user(user)
         
         if is_ajax:
-            return jsonify({'success': True, 'message': 'Registration successful! Welcome aboard, Commander.', 'redirect': url_for('main.game')})
+            return jsonify({'success': True, 'message': 'Registration successful! Welcome aboard, Commander.', 'redirect': url_for('main.build')})
         
-        return redirect(url_for('main.game'))
+        return redirect(url_for('main.build'))
     
     # If it's a GET request, return the normal template
     return render_template('register.html')

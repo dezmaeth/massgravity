@@ -543,7 +543,7 @@ class MassGravity {
         // Make the game instance available globally for ShipBuilder
         window.massGravity = this;
         
-        // We're using window.buildMenuUI which is set up in game.html
+        // We're using window.buildMenuUI which is set up in build.html
         console.log("initUI - window.buildMenuUI available:", !!window.buildMenuUI);
         
         // Update resource display

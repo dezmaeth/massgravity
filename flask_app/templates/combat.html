@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Combat - Mass Gravity{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/space-animations.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/combat.css') }}">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<!-- Socket.IO Client -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.js"></script>
+<!-- Use non-module version of THREE.js for better compatibility -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Space background -->
+<div class="space-background">
+    <div class="nebula-background"></div>
+    <div class="stars"></div>
+    <div class="stars"></div>
+</div>
+
+<div id="resource-display">
+    <div class="resource-item">
+        <i class="fas fa-space-shuttle"></i>
+        <span id="fighters-value">0</span> Fighters
+    </div>
+    <div class="resource-item">
+        <i class="fas fa-rocket"></i>
+        <span id="capital-ships-value">0</span> Capital Ships
+    </div>
+    <a href="{{ url_for('main.build') }}" class="resource-item" style="margin-left: auto;">
+        <i class="fas fa-arrow-left"></i> Return to Galaxy
+    </a>
+</div>
+
+<div class="battle-status">
+    <h3>Battle Status</h3>
+    <div id="opponent-info">
+        Opponent: <span id="opponent-name">Connecting...</span>
+    </div>
+    <div id="battle-info">
+        Status: <span id="battle-status-text">Waiting for opponent</span>
+    </div>
+</div>
+
+<div id="combat-container"></div>
+
+<div class="combat-ui">
+    <button id="select-all" class="combat-button">Select All</button>
+    <button id="attack-mode" class="combat-button action-button">Attack Mode</button>
+    <button id="patrol-mode" class="combat-button">Patrol Mode</button>
+    <button id="retreat" class="combat-button">Retreat</button>
+</div>
+
+<div id="waiting-overlay" class="waiting-overlay">
+    <h2 class="pulse-glow">Waiting for opponent to accept battle...</h2>
+    <p>Once accepted, the battle will begin.</p>
+    <button id="cancel-battle" class="combat-button" style="margin-top: 30px;">Cancel</button>
+</div>
+
+<!-- Connection status indicator -->
+<div id="connection-status" class="connecting">
+    <div class="indicator"></div>
+    <span>Connecting...</span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Store user info
+    window.USER_INFO = {
+        id: {{ current_user.id }},
+        username: "{{ current_user.username }}",
+        faction: "{{ current_user.faction }}"
+    };
+    
+    // Store opponent ID
+    window.OPPONENT_ID = {{ opponent_id }};
+    
+    // Set up Socket.IO connection
+    const socket = io();
+    
+    // Connection status handlers
+    socket.on('connect', function() {
+        const statusDiv = document.getElementById('connection-status');
+        statusDiv.className = 'connected';
+        statusDiv.innerHTML = '<div class="indicator"></div><span>Connected</span>';
+        console.log('Socket connected');
+        
+        // Join combat room
+        socket.emit('join_combat', {
+            opponent_id: window.OPPONENT_ID,
+            user_id: window.USER_INFO.id,
+            username: window.USER_INFO.username
+        });
+    });
+    
+    socket.on('disconnect', function() {
+        const statusDiv = document.getElementById('connection-status');
+        statusDiv.className = 'disconnected';
+        statusDiv.innerHTML = '<div class="indicator"></div><span>Disconnected</span>';
+        console.log('Socket disconnected');
+    });
+    
+    socket.on('connect_error', function() {
+        const statusDiv = document.getElementById('connection-status');
+        statusDiv.className = 'disconnected';
+        statusDiv.innerHTML = '<div class="indicator"></div><span>Connection Error</span>';
+        console.log('Socket connection error');
+    });
+    
+    // Combat specific socket handlers
+    socket.on('battle_accepted', function(data) {
+        console.log('Battle accepted event received:', data);
+        // Hide waiting overlay, battle is starting
+        document.getElementById('waiting-overlay').style.display = 'none';
+        
+        // Update battle info
+        document.getElementById('opponent-name').textContent = data.opponent_name;
+        document.getElementById('battle-status-text').textContent = 'Battle in progress';
+        
+        // We'll continue with our DOMContentLoaded scene for now
+        document.getElementById('battle-status-text').textContent = 'Using test scene - combat module still in progress';
+        
+        // Confirm readiness to opponent after a short delay
+        setTimeout(function() {
+            socket.emit('combat_ready', {
+                battle_room: data.battle_room,
+                user_id: window.USER_INFO.id
+            });
+            console.log('Sent combat_ready event');
+        }, 1000);
+    });
+    
+    socket.on('opponent_ready', function(data) {
+        console.log('Opponent is ready for combat:', data);
+        // Update status text
+        document.getElementById('battle-status-text').textContent = 'Opponent ready, battle in progress';
+    });
+    
+    socket.on('combat_synchronized', function(data) {
+        console.log('Combat fully synchronized, both players ready:', data);
+        // Update status text
+        document.getElementById('battle-status-text').textContent = 'Battle in progress';
+        
+        // If the overlay is somehow still visible, hide it
+        document.getElementById('waiting-overlay').style.display = 'none';
+    });
+    
+    socket.on('battle_cancelled', function() {
+        // Return to the main game
+        window.location.href = "{{ url_for('main.build') }}";
+    });
+    
+    // Cancel button handler
+    document.getElementById('cancel-battle').addEventListener('click', function() {
+        socket.emit('cancel_battle', {
+            opponent_id: window.OPPONENT_ID
+        });
+        
+        // Return to the main game
+        window.location.href = "{{ url_for('main.build') }}";
+    });
+    
+    // Combat UI buttons
+    document.getElementById('select-all').addEventListener('click', function() {
+        alert('Select All clicked - Full combat system coming soon!');
+    });
+    
+    document.getElementById('attack-mode').addEventListener('click', function() {
+        alert('Attack Mode clicked - Full combat system coming soon!');
+    });
+    
+    document.getElementById('patrol-mode').addEventListener('click', function() {
+        alert('Patrol Mode clicked - Full combat system coming soon!');
+    });
+    
+    document.getElementById('retreat').addEventListener('click', function() {
+        alert('Retreat clicked - Full combat system coming soon!');
+    });
+    
+    // Utility function to show notifications
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = 'notification ' + (type === 'error' ? 'error' : '');
+        
+        // Add icon based on notification type
+        const icon = type === 'error' ? 
+            '<i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>' : 
+            '<i class="fas fa-info-circle" style="margin-right: 8px;"></i>';
+            
+        notification.innerHTML = icon + message;
+        
+        // Set background color based on type
+        if (type === 'error') {
+            notification.style.backgroundColor = 'rgba(231, 76, 60, 0.8)';
+            notification.style.borderColor = 'rgba(231, 76, 60, 0.9)';
+        } else {
+            notification.style.backgroundColor = 'rgba(46, 204, 113, 0.8)';
+            notification.style.borderColor = 'rgba(46, 204, 113, 0.9)';
+        }
+        
+        notification.style.position = 'absolute';
+        notification.style.top = '70px';
+        notification.style.left = '50%';
+        notification.style.transform = 'translateX(-50%)';
+        notification.style.padding = '10px 20px';
+        notification.style.borderRadius = '5px';
+        notification.style.zIndex = '1000';
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.5s';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    document.body.removeChild(notification);
+                }
+            }, 500);
+        }, 3000);
+    }
+    
+    // Handle combat timeout
+    socket.on('combat_timeout', function(data) {
+        console.warn('Combat initialization timeout:', data);
+        showNotification('Battle initialization timed out. Please try again.', 'error');
+        
+        // Redirect back to game after a short delay
+        setTimeout(() => {
+            window.location.href = "{{ url_for('main.build') }}";
+        }, 3000);
+    });
+</script>
+{% endblock %}

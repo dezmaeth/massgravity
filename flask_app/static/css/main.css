@@ -18,7 +18,7 @@ body {
     line-height: 1.6;
     color: #f0f0f0;
     background-color: var(--dark-color);
-    background-image: url('../img/galaxy_starfield.png');
+    /* Removing missing image to prevent 404 error */
     background-size: cover;
     min-height: 100vh;
 }

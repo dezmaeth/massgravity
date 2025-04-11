@@ -716,7 +716,7 @@
         
         <div class="btn-container">
             {% if current_user.is_authenticated %}
-            <a href="{{ url_for('main.game') }}" class="btn play-btn">
+            <a href="{{ url_for('main.build') }}" class="btn play-btn">
                 <i class="fas fa-rocket"></i> Launch Game
             </a>
             {% else %}
@@ -792,7 +792,7 @@
         
         <div class="btn-container">
             {% if current_user.is_authenticated %}
-            <a href="{{ url_for('main.game') }}" class="btn play-btn">
+            <a href="{{ url_for('main.build') }}" class="btn play-btn">
                 <i class="fas fa-rocket"></i> Launch Game
             </a>
             {% else %}
@@ -1644,7 +1644,7 @@
                         
                         // Redirect to game after delay
                         setTimeout(() => {
-                            window.location.href = data.redirect || '/game';
+                            window.location.href = data.redirect || '/build';
                         }, 2000);
                     } else {
                         showErrorMessage(registerForm, data.message || 'An error occurred during registration.');
@@ -1666,7 +1666,7 @@
                         
                         // Redirect to game after delay
                         setTimeout(() => {
-                            window.location.href = data.redirect || '/game';
+                            window.location.href = data.redirect || '/build';
                         }, 1500);
                     } else {
                         showErrorMessage(loginForm, data.message || 'Invalid credentials. Access denied.');

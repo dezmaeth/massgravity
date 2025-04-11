@@ -11,15 +11,30 @@ main = Blueprint('main', __name__)
 def index():
     return render_template('index.html')
 
-@main.route('/game')
+@main.route('/build')
 @login_required
-def game():
+def build():
     # Initialize game data for new users
     if not current_user.game_data or current_user.game_data == "{}":
         current_user.initialize_game_data()
         db.session.commit()
     
-    return render_template('game.html')
+    return render_template('build.html')
+    
+@main.route('/combat/<opponent_id>')
+@login_required
+def combat(opponent_id):
+    """
+    RTS Combat view where players engage in ship-to-ship battles
+    """
+    try:
+        # Validate opponent_id is an integer
+        opponent_id = int(opponent_id)
+        
+        # Return the combat template with opponent information
+        return render_template('combat.html', opponent_id=opponent_id)
+    except ValueError:
+        return jsonify({'error': 'Invalid opponent ID'}), 400
 
 @main.route('/api/save_game', methods=['POST'])
 @login_required

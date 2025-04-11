@@ -4,345 +4,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/space-animations.css') }}">
-<style>
-    body, html {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        width: 100%;
-        height: 100%;
-    }
-    
-    header, footer {
-        display: none;
-    }
-    
-    main {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
-    
-    #game-container {
-        width: 100%;
-        height: 100%;
-    }
-    
-    #ui-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-    }
-    
-    #ui-overlay button, #ui-overlay .controls, #build-menu, #ui-overlay .build-menu {
-        pointer-events: auto;
-    }
-    
-    #resource-display {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: rgba(0, 20, 40, 0.8);
-        border-bottom: 1px solid rgba(0, 100, 255, 0.5);
-        color: #a0e0ff;
-        padding: 8px 16px;
-        font-size: 16px;
-        text-align: center;
-        z-index: 1000;
-        pointer-events: auto;
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        text-shadow: 0 0 5px rgba(0, 150, 255, 0.5);
-        backdrop-filter: blur(5px);
-        box-shadow: 0 0 15px rgba(0, 100, 200, 0.3);
-    }
-    
-    .resource-item {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        transition: transform 0.2s ease;
-    }
-    
-    .resource-item:hover {
-        transform: translateY(-2px);
-    }
-    
-    .resource-item i {
-        color: #ffcc00;
-        margin-right: 5px;
-    }
-    
-    .logout-button {
-        margin-left: auto;
-        color: white;
-        text-decoration: none;
-        transition: color 0.3s ease, text-shadow 0.3s ease;
-    }
-    
-    .logout-button:hover {
-        color: #ff6a6a;
-        text-shadow: 0 0 8px rgba(255, 106, 106, 0.7);
-    }
-    
-    .loading-screen {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: radial-gradient(ellipse at center, #1b2735 0%, #090a0f 100%);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        color: white;
-        z-index: 1000;
-    }
-    
-    .loading-screen h2 {
-        color: #a0e0ff;
-        text-shadow: 0 0 10px rgba(0, 150, 255, 0.7);
-        animation: pulse-glow 2s infinite;
-    }
-    
-    .loading-screen .progress {
-        width: 80%;
-        height: 20px;
-        background: rgba(255,255,255,0.1);
-        border-radius: 10px;
-        margin-top: 20px;
-        overflow: hidden;
-    }
-    
-    .loading-screen .progress-bar {
-        height: 100%;
-        background: linear-gradient(to right, #0066cc, #00ccff);
-        width: 0%;
-        border-radius: 10px;
-        transition: width 0.3s;
-        position: relative;
-    }
-    
-    .loading-screen .progress-bar::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(to right, 
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.4) 50%,
-            rgba(255, 255, 255, 0) 100%);
-        animation: scan-line 1.5s linear infinite;
-    }
-    
-    /* Build Menu Styles */
-    #build-menu {
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(0, 20, 40, 0.8);
-        border: 1px solid rgba(0, 100, 255, 0.5);
-        border-radius: 5px;
-        padding: 15px;
-        color: #a0e0ff;
-        width: 300px;
-        z-index: 9999;
-        pointer-events: auto;
-        box-shadow: 0 0 15px rgba(0, 100, 200, 0.3);
-        backdrop-filter: blur(5px);
-        animation: fade-in-up 0.5s ease-out forwards;
-    }
-    
-    #build-menu h3 {
-        margin-top: 0;
-        color: #00ccff;
-        border-bottom: 1px solid rgba(0, 100, 255, 0.5);
-        padding-bottom: 8px;
-        margin-bottom: 10px;
-        text-shadow: 0 0 5px rgba(0, 150, 255, 0.7);
-    }
-    
-    .build-menu-item {
-        display: flex;
-        align-items: center;
-        padding: 8px;
-        margin-bottom: 5px;
-        background: rgba(0, 50, 100, 0.3);
-        border: 1px solid rgba(0, 100, 255, 0.3);
-        border-radius: 3px;
-        cursor: pointer;
-        transition: all 0.3s;
-        animation: fade-in-up 0.5s forwards;
-    }
-    
-    .build-menu-item:hover {
-        background: rgba(0, 70, 120, 0.5);
-        border: 1px solid rgba(0, 150, 255, 0.5);
-        transform: translateX(5px);
-        box-shadow: 0 0 10px rgba(0, 150, 255, 0.3);
-    }
-    
-    .build-menu-item.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        background: rgba(50, 50, 50, 0.3);
-        border: 1px solid rgba(100, 100, 100, 0.3);
-    }
-    
-    .build-menu-item-icon {
-        width: 32px;
-        height: 32px;
-        background: rgba(0, 100, 200, 0.5);
-        border-radius: 3px;
-        margin-right: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
-        box-shadow: 0 0 5px rgba(0, 100, 200, 0.5);
-    }
-    
-    .build-menu-item-details {
-        flex: 1;
-    }
-    
-    .build-menu-item-name {
-        font-weight: bold;
-        margin-bottom: 3px;
-        text-shadow: 0 0 5px rgba(0, 150, 255, 0.5);
-    }
-    
-    .build-menu-item-desc {
-        font-size: 0.8em;
-        color: rgba(255, 255, 255, 0.7);
-    }
-    
-    .build-menu-item-cost {
-        font-size: 0.8em;
-        color: #ffcc00;
-        text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
-    }
-    
-    .notification {
-        padding: 10px 20px;
-        background: rgba(0, 100, 200, 0.8);
-        color: white;
-        border-radius: 5px;
-        position: absolute;
-        top: 70px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1000;
-        border: 1px solid rgba(0, 150, 255, 0.5);
-        box-shadow: 0 0 15px rgba(0, 100, 200, 0.5);
-        text-shadow: 0 0 5px rgba(0, 150, 255, 0.7);
-        animation: notification-slide 5s forwards;
-        backdrop-filter: blur(5px);
-    }
-    
-    /* Faction Material Styling */
-    .faction-blue i {
-        color: #3498db;
-        text-shadow: 0 0 5px #3498db;
-    }
-    
-    .faction-red i {
-        color: #e74c3c;
-        text-shadow: 0 0 5px #e74c3c;
-    }
-    
-    .faction-green i {
-        color: #2ecc71;
-        text-shadow: 0 0 5px #2ecc71;
-    }
-
-    /* Connection status indicator */
-    #connection-status {
-        position: fixed;
-        bottom: 10px;
-        left: 10px;
-        padding: 5px 10px;
-        border-radius: 15px;
-        font-size: 12px;
-        z-index: 1000;
-        color: white;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        backdrop-filter: blur(5px);
-        animation: fade-in-up 0.5s ease-out forwards;
-    }
-
-    #connection-status.connected {
-        background-color: rgba(46, 204, 113, 0.7);
-        box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
-    }
-
-    #connection-status.connecting {
-        background-color: rgba(243, 156, 18, 0.7);
-        box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
-    }
-
-    #connection-status.disconnected {
-        background-color: rgba(231, 76, 60, 0.7);
-        box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
-        animation: alert-pulse 2s infinite;
-    }
-
-    #connection-status .indicator {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-    }
-
-    #connection-status.connected .indicator {
-        background-color: #2ecc71;
-        box-shadow: 0 0 5px #2ecc71;
-    }
-
-    #connection-status.connecting .indicator {
-        background-color: #f39c12;
-        box-shadow: 0 0 5px #f39c12;
-    }
-
-    #connection-status.disconnected .indicator {
-        background-color: #e74c3c;
-        box-shadow: 0 0 5px #e74c3c;
-    }
-    
-    /* Resource background bars */
-    #resources-value, #research-points-value, #population-value, 
-    #blue-material-value, #red-material-value, #green-material-value {
-        position: relative;
-        padding: 0 5px;
-        border-radius: 3px;
-        transition: all 0.3s ease;
-    }
-    
-    #resources-value::after, #research-points-value::after, #population-value::after,
-    #blue-material-value::after, #red-material-value::after, #green-material-value::after {
-        content: '';
-        position: absolute;
-        bottom: -2px;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background: currentColor;
-        border-radius: 2px;
-        opacity: 0.7;
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/game.css')}}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -409,6 +71,40 @@
     <!-- Other UI elements can go here -->
 </div>
 
+<!-- Players list panel -->
+<div id="players-panel" class="holographic-panel scanning-panel" style="position: fixed; top: 70px; right: 20px; width: 250px; background-color: rgba(0, 20, 40, 0.8); border: 1px solid rgba(0, 100, 255, 0.5); color: #a0e0ff; padding: 15px; border-radius: 5px; display: none; backdrop-filter: blur(5px);">
+    <h3 style="margin-top: 0; color: #00ccff; border-bottom: 1px solid rgba(0, 100, 255, 0.5); padding-bottom: 8px; margin-bottom: 10px;">Online Players</h3>
+    <div id="players-list" style="max-height: 300px; overflow-y: auto;">
+        <div class="no-players" style="text-align: center; padding: 20px 0; color: rgba(255, 255, 255, 0.6);">
+            No other players online
+        </div>
+    </div>
+    <button id="refresh-players" style="width: 100%; margin-top: 10px; background: rgba(0, 80, 160, 0.8); color: #a0e0ff; border: 1px solid rgba(0, 150, 255, 0.5); padding: 8px; cursor: pointer; border-radius: 3px;">
+        <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+</div>
+
+<!-- Battle request modal -->
+<div id="battle-request-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); z-index: 2000;">
+    <div class="modal-content" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(0, 30, 60, 0.95); border: 2px solid rgba(0, 100, 255, 0.7); border-radius: 8px; padding: 20px; min-width: 300px; box-shadow: 0 0 30px rgba(0, 150, 255, 0.5); text-align: center;">
+        <h3 style="color: #00ccff; margin-top: 0;">Battle Request</h3>
+        <p id="battle-request-text" style="margin-bottom: 20px;">Player wants to battle with you!</p>
+        <div style="display: flex; justify-content: space-between; gap: 10px;">
+            <button id="accept-battle" style="flex: 1; background-color: rgba(46, 204, 113, 0.8); color: white; border: none; padding: 10px; cursor: pointer; border-radius: 3px;">
+                Accept
+            </button>
+            <button id="decline-battle" style="flex: 1; background-color: rgba(231, 76, 60, 0.8); color: white; border: none; padding: 10px; cursor: pointer; border-radius: 3px;">
+                Decline
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Player list toggle button -->
+<button id="toggle-players-panel" style="position: fixed; top: 70px; right: 20px; background-color: rgba(0, 80, 160, 0.8); color: #a0e0ff; border: 1px solid rgba(0, 150, 255, 0.5); padding: 8px 12px; border-radius: 5px; cursor: pointer; z-index: 1000;">
+    <i class="fas fa-users"></i> Players
+</button>
+
 <!-- Connection status indicator -->
 <div id="connection-status" class="connecting">
     <div class="indicator"></div>
@@ -428,12 +124,18 @@
     // Set up Socket.IO connection
     const socket = io();
     
+    // Store battle request info
+    let currentBattleRequest = null;
+    
     // Connection status handlers
     socket.on('connect', function() {
         const statusDiv = document.getElementById('connection-status');
         statusDiv.className = 'connected';
         statusDiv.innerHTML = '<div class="indicator"></div><span>Connected</span>';
         console.log('Socket connected');
+        
+        // Request active players list
+        socket.emit('get_active_players');
     });
     
     socket.on('disconnect', function() {
@@ -449,6 +151,147 @@
         statusDiv.innerHTML = '<div class="indicator"></div><span>Connection Error</span>';
         console.log('Socket connection error');
     });
+    
+    // Players list functionality
+    socket.on('active_players_list', function(data) {
+        updatePlayersList(data.players);
+    });
+    
+    // Battle request handlers
+    socket.on('battle_request', function(data) {
+        // Store request data
+        currentBattleRequest = data;
+        
+        // Update the request text
+        document.getElementById('battle-request-text').textContent = 
+            `${data.from_name} (${data.from_faction}) wants to battle with you!`;
+        
+        // Show the modal
+        document.getElementById('battle-request-modal').style.display = 'block';
+    });
+    
+    socket.on('battle_request_sent', function(data) {
+        showNotification(`Battle request sent to ${data.target_name}`);
+    });
+    
+    socket.on('battle_request_error', function(data) {
+        showNotification(data.message, 'error');
+    });
+    
+    socket.on('battle_accepted', function(data) {
+        showNotification(`${data.opponent_name} accepted your battle request!`);
+        // Redirect to combat page
+        window.location.href = `/combat/${data.opponent_id}`;
+    });
+    
+    socket.on('battle_declined', function(data) {
+        showNotification(`${data.opponent_name} declined your battle request.`, 'error');
+    });
+    
+    socket.on('battle_response_error', function(data) {
+        showNotification(data.message, 'error');
+    });
+    
+    // Players panel toggle
+    document.getElementById('toggle-players-panel').addEventListener('click', function() {
+        const panel = document.getElementById('players-panel');
+        if (panel.style.display === 'none') {
+            panel.style.display = 'block';
+            // Request updated player list
+            socket.emit('get_active_players');
+        } else {
+            panel.style.display = 'none';
+        }
+    });
+    
+    // Battle request modal response buttons
+    document.getElementById('accept-battle').addEventListener('click', function() {
+        if (currentBattleRequest) {
+            socket.emit('accept_battle', {
+                requester_id: currentBattleRequest.from_id
+            });
+            document.getElementById('battle-request-modal').style.display = 'none';
+        }
+    });
+    
+    document.getElementById('decline-battle').addEventListener('click', function() {
+        if (currentBattleRequest) {
+            socket.emit('decline_battle', {
+                requester_id: currentBattleRequest.from_id
+            });
+            document.getElementById('battle-request-modal').style.display = 'none';
+            currentBattleRequest = null;
+        }
+    });
+    
+    // Refresh players list button
+    document.getElementById('refresh-players').addEventListener('click', function() {
+        socket.emit('get_active_players');
+    });
+    
+    // Function to update the players list
+    function updatePlayersList(players) {
+        const playersList = document.getElementById('players-list');
+        
+        if (players.length === 0) {
+            playersList.innerHTML = '<div class="no-players" style="text-align: center; padding: 20px 0; color: rgba(255, 255, 255, 0.6);">No other players online</div>';
+            return;
+        }
+        
+        // Clear the list
+        playersList.innerHTML = '';
+        
+        // Add each player
+        players.forEach(player => {
+            const playerItem = document.createElement('div');
+            playerItem.className = 'player-item';
+            playerItem.style.display = 'flex';
+            playerItem.style.justifyContent = 'space-between';
+            playerItem.style.alignItems = 'center';
+            playerItem.style.padding = '8px';
+            playerItem.style.marginBottom = '5px';
+            playerItem.style.background = 'rgba(0, 50, 100, 0.3)';
+            playerItem.style.borderRadius = '3px';
+            playerItem.style.border = '1px solid rgba(0, 100, 255, 0.3)';
+            
+            // Assign faction color
+            let factionColor = '#3498db'; // Blue default
+            if (player.faction === 'red') {
+                factionColor = '#e74c3c';
+            } else if (player.faction === 'green') {
+                factionColor = '#2ecc71';
+            }
+            
+            playerItem.innerHTML = `
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 10px; height: 10px; background-color: ${factionColor}; border-radius: 50%; margin-right: 8px;"></div>
+                    <span>${player.username}</span>
+                </div>
+                <button class="attack-button" data-player-id="${player.id}" data-player-name="${player.username}" data-player-faction="${player.faction}"
+                    style="background: rgba(200, 60, 60, 0.7); color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                    Attack
+                </button>
+            `;
+            
+            playersList.appendChild(playerItem);
+        });
+        
+        // Add event listeners to attack buttons
+        const attackButtons = playersList.querySelectorAll('.attack-button');
+        attackButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const playerId = this.getAttribute('data-player-id');
+                const playerName = this.getAttribute('data-player-name');
+                
+                // Send battle request
+                socket.emit('request_battle', {
+                    target_id: parseInt(playerId)
+                });
+                
+                showNotification(`Sending battle request to ${playerName}...`);
+            });
+        });
+    }
     
     // Resource update handler from server
     socket.on('resource_update', function(data) {
