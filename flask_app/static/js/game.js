@@ -49,13 +49,7 @@ class MassGravity {
         
         // Store reference to gameState
         this.gameState = gameState;
-        
-        // Store socket reference for easy access
-        this.socket = window.socket;
-        
-        // Set up save button handler
-        //document.getElementById('save-game').addEventListener('click', () => this.saveGame());
-        
+
         // Try to load game data and settings first
         Promise.all([
             this.loadGame(),
@@ -68,7 +62,12 @@ class MassGravity {
             this.initUI();
             this.setListeners();
             this.hideLoadingScreen();
-            this.render();
+            
+            // Only call render if this is an instance of MassGravity directly
+            // This allows subclasses to override when rendering begins
+            if (this.constructor === MassGravity) {
+                this.render();
+            }
         }).catch(error => {
             console.error("Error initializing game:", error);
             this.hideLoadingScreen();
@@ -387,20 +386,49 @@ class MassGravity {
     }
     
     initAudio() {
-        // Initialize background music
-        this.backgroundMusic = new Audio('/static/assets/music/track01.mp3');
-        this.backgroundMusic.loop = true;
-        this.backgroundMusic.volume = 0; // Start with volume at 0 for fade-in
-        this.targetMusicVolume = 0.7; // Default maximum volume
-        this.isMusicMuted = false;
-        
-        // Set a timeout to start playing music 15 seconds after initialization
-        setTimeout(() => {
-            this.playBackgroundMusic();
-        }, 15000);
+        // Check if global audio controls exist, if not create our own
+        if (window.audioControls) {
+            console.log("Using global audio controls system");
+            this.usingGlobalAudio = true;
+            
+            // Expose methods to window.audioControls for global management
+            const originalPlay = window.audioControls.play;
+            window.audioControls.play = () => {
+                originalPlay();
+                this.isMusicMuted = false;
+            };
+            
+            const originalPause = window.audioControls.pause;
+            window.audioControls.pause = () => {
+                originalPause();
+                this.isMusicMuted = true;
+            };
+            
+            // Set initial volume from global controls
+            this.targetMusicVolume = 0.7;
+            this.isMusicMuted = false;
+        } else {
+            console.log("Creating game's own audio system");
+            this.usingGlobalAudio = false;
+            
+            // Initialize background music
+            this.backgroundMusic = new Audio('/static/assets/music/track01.mp3');
+            this.backgroundMusic.loop = true;
+            this.backgroundMusic.volume = 0; // Start with volume at 0 for fade-in
+            this.targetMusicVolume = 0.7; // Default maximum volume
+            this.isMusicMuted = false;
+            
+            // Set a timeout to start playing music 15 seconds after initialization
+            setTimeout(() => {
+                this.playBackgroundMusic();
+            }, 15000);
+        }
     }
     
     playBackgroundMusic() {
+        // Skip if using global audio system
+        if (this.usingGlobalAudio) return;
+        
         // Start playing the music
         this.backgroundMusic.play().catch(e => {
             console.warn('Could not autoplay music. User interaction may be required:', e);
@@ -423,6 +451,14 @@ class MassGravity {
     }
     
     setMusicVolume(volume) {
+        // Skip if using global audio system
+        if (this.usingGlobalAudio) {
+            if (window.audioControls && typeof window.audioControls.setVolume === 'function') {
+                window.audioControls.setVolume(volume * 100);
+            }
+            return;
+        }
+        
         // Set a new target volume (0.0 to 1.0)
         this.targetMusicVolume = Math.max(0, Math.min(1, volume));
         
@@ -433,6 +469,19 @@ class MassGravity {
     }
     
     toggleMusicMute() {
+        // Skip if using global audio system
+        if (this.usingGlobalAudio) {
+            if (window.audioControls) {
+                if (this.isMusicMuted) {
+                    window.audioControls.unmute();
+                } else {
+                    window.audioControls.mute();
+                }
+                this.isMusicMuted = !this.isMusicMuted;
+            }
+            return this.isMusicMuted;
+        }
+        
         this.isMusicMuted = !this.isMusicMuted;
         
         if (this.isMusicMuted) {
@@ -843,50 +892,6 @@ class MassGravity {
         animate();
     }
     
-    onMouseClick(event) {
-        // If we're in the middle of a camera transition, ignore clicks
-        if (this.isTransitioning) return;
-        
-        // If double click is detected, don't handle as a single click
-        if (this.clickCount === 1) return;
-        
-        // Calculate mouse position in normalized device coordinates
-        this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        
-        // Update the picking ray with the camera and mouse position
-        this.raycaster.setFromCamera(this.mouse, this.camera);
-        
-        // Calculate objects intersecting the picking ray
-        const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-        
-        // Find the first selectable object
-        let selected = null;
-        
-        for (let i = 0; i < intersects.length; i++) {
-            // Traverse up the parent chain to find the root object
-            let object = intersects[i].object;
-            while (object.parent && !object.userData.isSelectable) {
-                object = object.parent;
-            }
-            
-            if (object.userData.isSelectable) {
-                selected = object;
-                break;
-            }
-        }
-        
-        // Handle selection
-        if (selected) {
-            this.selectedObject = selected;
-            this.ui.selectObject(selected);
-        } else {
-            // Clear selection
-            this.selectedObject = null;
-            this.ui.selectObject(null);
-        }
-    }
-    
     addSkybox() {
         // Create a skybox using a CubeTextureLoader
         const loader = new THREE.CubeTextureLoader();
@@ -1165,34 +1170,6 @@ class MassGravity {
         }
     }
     
-    // Show mining notification
-    showMiningNotification(amount) {
-        const notification = document.createElement('div');
-        notification.textContent = `Mining facilities generated ${Math.floor(amount)} resources`;
-        notification.style.position = 'absolute';
-        notification.style.top = '40px'; // Position below other notifications
-        notification.style.left = '50%';
-        notification.style.transform = 'translateX(-50%)';
-        notification.style.background = 'rgba(255,204,0,0.7)';
-        notification.style.color = 'white';
-        notification.style.padding = '8px 12px';
-        notification.style.borderRadius = '5px';
-        notification.style.zIndex = '1000';
-        notification.style.fontSize = '14px';
-        document.body.appendChild(notification);
-        
-        // Remove after a delay
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transition = 'opacity 0.5s';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    document.body.removeChild(notification);
-                }
-            }, 500);
-        }, 3000);
-    }
-    
     // Simple seeded random function
     seededRandom(seed) {
         let s = this.hashString(seed);
@@ -1233,76 +1210,10 @@ class MassGravity {
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
-    
-    render() {
-        requestAnimationFrame(() => this.render());
-        
-        // Update controls
-        this.controls.update();
-        
-        // Get delta time for animations
-        const delta = this.clock.getDelta() * this.timeScale * 1000;
-        
-        // Animate planetary orbits
-        if (this.orbits) {
-            this.orbits.forEach(orbit => {
-                if (orbit.userData && orbit.userData.orbitalPeriod) {
-                    // Rotate orbit based on period - use the orbital period which is calculated using the admin setting
-                    // Apply an extreme slowdown factor to make orbits nearly imperceptible in real-time
-                    // Divide by a billion to make it a million times slower
-                    orbit.rotation.y += (Math.PI * 2) / (orbit.userData.orbitalPeriod * 1000000000) * delta;
-                }
-            });
-        }
-        
-        // Update camera if we're focused on a planet
-        if (this.isZoomedIn && this.zoomedPlanet) {
-            // Get the current world position of the planet
-            const planetPos = new THREE.Vector3();
-            this.zoomedPlanet.getWorldPosition(planetPos);
-            
-            // Update the controls target to follow the planet
-            this.controls.target.copy(planetPos);
-            
-            // Look at the planet
-            this.camera.lookAt(planetPos);
-            
-            // Update controls
-            this.controls.update();
-        }
-        
-        // Resource generation now happens server-side via WebSockets
-        
-        // Animate planet and star objects
-        if (this.solar) {
-            // Animate stars
-            this.solar.children.forEach(object => {
-                if (object.animate) {
-                    object.animate(delta);
-                }
-            });
-            
-            // Animate planets in orbits
-            if (this.orbits) {
-                this.orbits.forEach(orbit => {
-                    orbit.children.forEach(child => {
-                        if (child.animate) {
-                            child.animate(delta);
-                        }
-                    });
-                });
-            }
-        }
-        
-        // Render scene
-        this.renderer.render(this.scene, this.camera);
-    }
 }
 
-// Export for testing
+// Export for testing and for use by other classes
 export { MassGravity };
 
-// Initialize the game when the page is fully loaded
-window.addEventListener('DOMContentLoaded', () => {
-    new MassGravity();
-});
+// Also make available globally for easier access from other scripts
+window.MassGravity = MassGravity;

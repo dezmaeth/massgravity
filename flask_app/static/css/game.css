@@ -335,3 +335,103 @@ main {
     border-radius: 2px;
     opacity: 0.7;
 }
+
+/* Audio control styles */
+#audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+    padding: 0 5px;
+    transition: all 0.3s ease;
+}
+
+#audio-controls:hover {
+    background-color: rgba(0, 40, 80, 0.9);
+    box-shadow: 0 0 15px rgba(0, 120, 255, 0.5);
+}
+
+.audio-control-button {
+    background: none;
+    border: none;
+    color: #a0e0ff;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    transition: all 0.3s ease;
+}
+
+.audio-control-button:hover {
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(0, 150, 255, 0.9);
+    transform: scale(1.1);
+}
+
+.audio-control-button.active {
+    background-color: rgba(0, 100, 200, 0.6);
+    box-shadow: 0 0 10px rgba(0, 150, 255, 0.7);
+}
+
+.audio-control-button.muted {
+    color: #e74c3c;
+}
+
+#volume-slider {
+    -webkit-appearance: none;
+    width: 80px;
+    height: 4px;
+    background: rgba(0, 100, 200, 0.3);
+    border-radius: 2px;
+    outline: none;
+    transition: opacity 0.2s ease;
+}
+
+#volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #a0e0ff;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 150, 255, 0.7);
+    transition: all 0.2s ease;
+}
+
+#volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #a0e0ff;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 150, 255, 0.7);
+    transition: all 0.2s ease;
+}
+
+#volume-slider::-webkit-slider-thumb:hover {
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 150, 255, 0.9);
+    transform: scale(1.2);
+}
+
+#volume-slider::-moz-range-thumb:hover {
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 150, 255, 0.9);
+    transform: scale(1.2);
+}
+
+.track-name {
+    color: #a0e0ff;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+    margin-right: 5px;
+}

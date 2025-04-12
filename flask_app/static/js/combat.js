@@ -1,12 +1,12 @@
 // CombatGame class to handle RTS gameplay
 class CombatGame {
     constructor(data) {
+        console.log('CombatGame constructor called with data:', data);
         this.data = data;
         this.ships = [];
         this.opponentShips = [];
         this.selectedShips = [];
         this.isAttackMode = false;
-        this.isPatrolMode = false;
         
         // Track mouse position for movement commands
         this.mouse = new THREE.Vector2();
@@ -34,10 +34,14 @@ class CombatGame {
         this.initGridPlane();
         this.initShips();
         this.initEventListeners();
+        this.initNetworkHandlers();
         
         console.log('Combat initialization complete');
         console.log('Ships created:', this.ships.length, 'player ships,', this.opponentShips.length, 'opponent ships');
         console.log('Camera position:', this.camera.position);
+        
+        // Set up clock for animations
+        this.clock = new THREE.Clock();
         
         // Start game loop
         this.render();
@@ -125,15 +129,87 @@ class CombatGame {
     }
     
     initControls() {
-        // Use global THREE.OrbitControls
-        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.1;
-        this.controls.rotateSpeed = 0.7;
-        this.controls.zoomSpeed = 1.2;
-        this.controls.maxPolarAngle = Math.PI / 2.1; // Prevent going below the grid
-        this.controls.minDistance = 50;
-        this.controls.maxDistance = 500;
+        console.log("Initializing controls...");
+        console.log("OrbitControls available:", typeof THREE.OrbitControls);
+        console.log("TrackballControls available:", typeof THREE.TrackballControls);
+        
+        // Try different control types in order of preference
+        try {
+            // First try OrbitControls
+            if (typeof THREE.OrbitControls === 'function') {
+                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.1;
+                this.controls.rotateSpeed = 0.7;
+                this.controls.zoomSpeed = 1.2;
+                this.controls.maxPolarAngle = Math.PI / 2.1;
+                this.controls.minDistance = 50;
+                this.controls.maxDistance = 500;
+                
+                console.log("OrbitControls initialized successfully");
+                return;
+            }
+            
+            // Try TrackballControls if OrbitControls isn't available
+            if (typeof THREE.TrackballControls === 'function') {
+                this.controls = new THREE.TrackballControls(this.camera, this.renderer.domElement);
+                this.controls.rotateSpeed = 1.0;
+                this.controls.zoomSpeed = 1.2;
+                this.controls.panSpeed = 0.8;
+                this.controls.noZoom = false;
+                this.controls.noPan = false;
+                
+                console.log("TrackballControls initialized successfully");
+                return;
+            }
+            
+            // Simple manual camera controls if no control libraries work
+            console.warn("No control libraries available, using basic controls");
+            this.setupBasicControls();
+            
+        } catch(e) {
+            console.error("Error initializing controls:", e);
+            
+            // Fallback to simple manual camera controls
+            console.warn("Error initializing controls, using basic controls");
+            this.setupBasicControls();
+        }
+    }
+    
+    setupBasicControls() {
+        // Create a minimal control object with just an update method
+        this.controls = {
+            update: function() {}
+        };
+        
+        // Add keyboard controls as a simple fallback
+        document.addEventListener('keydown', (event) => {
+            // Simple keyboard camera controls
+            switch(event.key) {
+                case 'ArrowUp': // Move camera up
+                    this.camera.position.y += 10;
+                    break;
+                case 'ArrowDown': // Move camera down
+                    this.camera.position.y -= 10;
+                    break;
+                case 'ArrowLeft': // Rotate camera left
+                    this.camera.position.x -= 10;
+                    break;
+                case 'ArrowRight': // Rotate camera right
+                    this.camera.position.x += 10;
+                    break;
+                case '+': // Zoom in
+                case '=':
+                    this.camera.position.z -= 10;
+                    break;
+                case '-': // Zoom out
+                    this.camera.position.z += 10;
+                    break;
+            }
+            
+            // Make sure camera is looking at center
+            this.camera.lookAt(0, 0, 0);
+        });
     }
     
     initLights() {
@@ -246,7 +322,10 @@ class CombatGame {
         console.log(`Creating ${fighters} fighters and ${capitalShips} capital ships for player`);
         
         // Player faction color
-        const factionColor = this.getFactionColor(window.USER_INFO.faction);
+        const playerFaction = window.USER_INFO.faction;
+        const factionColor = this.getFactionColor(playerFaction);
+        
+        console.log(`Player faction: ${playerFaction}, color: ${factionColor.toString(16)}`);
         
         // Create fighter ships in a formation
         for (let i = 0; i < fighters; i++) {
@@ -262,9 +341,12 @@ class CombatGame {
                 -50 + (row * 20) // Formation rows
             );
             
-            fighter.userData.id = `player_fighter_${i}`;
+            // Create a unique ID that includes the user's ID to prevent confusion between players
+            fighter.userData.id = `player_${window.USER_INFO.id}_fighter_${i}`;
             fighter.userData.type = 'fighter';
             fighter.userData.isPlayerShip = true;
+            fighter.userData.ownerId = window.USER_INFO.id;
+            fighter.userData.faction = playerFaction;
             fighter.userData.health = 2;
             fighter.userData.speed = 0.8;
             fighter.userData.attackPower = 1;
@@ -284,9 +366,13 @@ class CombatGame {
                 20, // Higher elevation
                 0 + (i * 30) // Staggered positioning
             );
-            capitalShip.userData.id = `player_capital_${i}`;
+            
+            // Create a unique ID that includes the user's ID to prevent confusion
+            capitalShip.userData.id = `player_${window.USER_INFO.id}_capital_${i}`;
             capitalShip.userData.type = 'capital';
             capitalShip.userData.isPlayerShip = true;
+            capitalShip.userData.ownerId = window.USER_INFO.id;
+            capitalShip.userData.faction = playerFaction;
             capitalShip.userData.health = 10;
             capitalShip.userData.speed = 0.3;
             capitalShip.userData.attackPower = 3;
@@ -306,8 +392,11 @@ class CombatGame {
         
         console.log(`Creating ${fighters} fighters and ${capitalShips} capital ships for opponent`);
         
-        // Opponent faction color
-        const factionColor = this.getFactionColor(this.data.opponent_faction || 'red');
+        // Get opponent faction color based on their faction
+        const opponentFaction = this.data.opponent_faction || 'red';
+        const factionColor = this.getFactionColor(opponentFaction);
+        
+        console.log(`Opponent faction: ${opponentFaction}, color: ${factionColor.toString(16)}`);
         
         // Create fighter ships in a formation
         for (let i = 0; i < fighters; i++) {
@@ -326,9 +415,12 @@ class CombatGame {
             // Rotate to face player's side
             fighter.rotation.y = Math.PI;
             
-            fighter.userData.id = `opponent_fighter_${i}`;
+            // Create a unique ID that includes the opponent's ID to prevent confusion
+            fighter.userData.id = `player_${this.data.opponent_id}_fighter_${i}`;
             fighter.userData.type = 'fighter';
             fighter.userData.isOpponentShip = true;
+            fighter.userData.ownerId = this.data.opponent_id;
+            fighter.userData.faction = opponentFaction;
             fighter.userData.health = 2;
             fighter.userData.speed = 0.8;
             fighter.userData.attackPower = 1;
@@ -350,9 +442,12 @@ class CombatGame {
             // Rotate to face player's side
             capitalShip.rotation.y = Math.PI;
             
-            capitalShip.userData.id = `opponent_capital_${i}`;
+            // Create a unique ID that includes the opponent's ID to prevent confusion
+            capitalShip.userData.id = `player_${this.data.opponent_id}_capital_${i}`;
             capitalShip.userData.type = 'capital';
             capitalShip.userData.isOpponentShip = true;
+            capitalShip.userData.ownerId = this.data.opponent_id;
+            capitalShip.userData.faction = opponentFaction;
             capitalShip.userData.health = 10;
             capitalShip.userData.speed = 0.3;
             capitalShip.userData.attackPower = 3;
@@ -391,10 +486,14 @@ class CombatGame {
         marker.position.y = -2;
         fighter.add(marker);
         
+        // Create a lighter version of the faction color for engine glow
+        const engineColor = new THREE.Color(color);
+        engineColor.lerp(new THREE.Color(0xffffff), 0.5); // Mix with white
+        
         // Add engines glow (small cylinder at the back)
         const engineGeo = new THREE.CylinderGeometry(0.7, 0.5, 1, 8);
         const engineMat = new THREE.MeshBasicMaterial({
-            color: 0x00ffff,
+            color: engineColor.getHex(),
             transparent: true,
             opacity: 0.7
         });
@@ -405,9 +504,13 @@ class CombatGame {
         fighter.add(engine);
         
         // Add selection indicator (ring that's hidden by default)
+        // Use faction color with yellow tint for selection ring
+        const selectionColor = new THREE.Color(color);
+        selectionColor.lerp(new THREE.Color(0xffff00), 0.6); // Mix with yellow
+        
         const ringGeo = new THREE.TorusGeometry(5, 0.3, 8, 24);
         const ringMat = new THREE.MeshBasicMaterial({
-            color: 0xffff00,
+            color: selectionColor.getHex(),
             transparent: true,
             opacity: 0.7,
             depthTest: false
@@ -451,10 +554,14 @@ class CombatGame {
         marker.position.y = -4;
         capitalShip.add(marker);
         
+        // Create a lighter version of the faction color for engine glow
+        const engineColor = new THREE.Color(color);
+        engineColor.lerp(new THREE.Color(0xffffff), 0.5); // Mix with white
+        
         // Add engines glow (two cylinders at the back)
         const engineGeo = new THREE.CylinderGeometry(1.2, 1, 1.5, 8);
         const engineMat = new THREE.MeshBasicMaterial({
-            color: 0x00ffff,
+            color: engineColor.getHex(),
             transparent: true,
             opacity: 0.7
         });
@@ -469,10 +576,13 @@ class CombatGame {
         engine2.rotation.z = Math.PI / 2;
         capitalShip.add(engine2);
         
-        // Add a bridge on top
+        // Add a bridge on top - slightly tinted with faction color
+        const bridgeColor = new THREE.Color(0x444444);
+        bridgeColor.lerp(new THREE.Color(color), 0.2); // Mix with faction color slightly
+        
         const bridgeGeo = new THREE.BoxGeometry(5, 2, 6);
         const bridgeMat = new THREE.MeshStandardMaterial({
-            color: 0x444444,
+            color: bridgeColor.getHex(),
             metalness: 0.5,
             roughness: 0.5
         });
@@ -482,9 +592,13 @@ class CombatGame {
         capitalShip.add(bridge);
         
         // Add selection indicator (ring that's hidden by default)
+        // Use faction color with yellow tint for selection ring
+        const selectionColor = new THREE.Color(color);
+        selectionColor.lerp(new THREE.Color(0xffff00), 0.6); // Mix with yellow
+        
         const ringGeo = new THREE.TorusGeometry(12, 0.4, 8, 32);
         const ringMat = new THREE.MeshBasicMaterial({
-            color: 0xffff00,
+            color: selectionColor.getHex(),
             transparent: true,
             opacity: 0.7,
             depthTest: false
@@ -501,13 +615,22 @@ class CombatGame {
     }
     
     getFactionColor(faction) {
+        // Enhanced faction colors with more vibrant, distinct hues
         switch (faction) {
             case 'blue':
-                return 0x3498db;
+                return 0x007fff; // Brighter blue
             case 'red':
-                return 0xe74c3c;
+                return 0xff3030; // Brighter red
             case 'green':
-                return 0x2ecc71;
+                return 0x00cc44; // Brighter green
+            case 'yellow':
+                return 0xffcc00; // Gold
+            case 'purple':
+                return 0x9933ff; // Purple
+            case 'orange':
+                return 0xff8800; // Orange
+            case 'teal':
+                return 0x00cccc; // Teal
             default:
                 return 0xcccccc; // Default gray
         }
@@ -520,7 +643,35 @@ class CombatGame {
         // Mouse event handlers for ship selection and commands
         this.renderer.domElement.addEventListener('mousedown', this.onMouseDown.bind(this), false);
         this.renderer.domElement.addEventListener('mouseup', this.onMouseUp.bind(this), false);
-        this.renderer.domElement.addEventListener('mousemove', this.onMouseMove.bind(this), false);
+        
+        // UI button handlers
+        const selectAllButton = document.getElementById('select-all');
+        if (selectAllButton) {
+            selectAllButton.addEventListener('click', () => {
+                this.selectAllShips();
+            });
+        }
+        
+        const attackModeButton = document.getElementById('attack-mode');
+        if (attackModeButton) {
+            attackModeButton.addEventListener('click', () => {
+                this.setAttackMode(true);
+            });
+        }
+        
+        const patrolModeButton = document.getElementById('patrol-mode');
+        if (patrolModeButton) {
+            patrolModeButton.addEventListener('click', () => {
+                this.setPatrolMode(true);
+            });
+        }
+        
+        const retreatButton = document.getElementById('retreat');
+        if (retreatButton) {
+            retreatButton.addEventListener('click', () => {
+                this.retreat();
+            });
+        }
     }
     
     onWindowResize() {
@@ -529,666 +680,472 @@ class CombatGame {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
     
-    // MOUSE INTERACTION HANDLERS
-    
+    // Mouse event handlers for ship selection and movement
     onMouseDown(event) {
-        // Store starting position for potential drag selection
-        this.mouseDownX = event.clientX;
-        this.mouseDownY = event.clientY;
-        this.isDragging = true;
+        // Prevent default behavior
+        event.preventDefault();
         
-        // Calculate mouse position in normalized device coordinates
+        // Update mouse coordinates normalized (-1 to +1)
         this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
         
-        // Update the picking ray with the camera and mouse position
+        // Update picking ray
         this.raycaster.setFromCamera(this.mouse, this.camera);
         
-        // Find intersected objects
-        const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+        // Determine what was clicked
+        let intersects = this.raycaster.intersectObjects(this.scene.children, true);
         
-        // If attack mode is enabled, handle attack commands
-        if (this.isAttackMode && this.selectedShips.length > 0) {
-            const targetShips = intersects.filter(intersect => {
-                const object = this.getTopLevelParent(intersect.object);
-                return object.userData.isOpponentShip;
-            });
+        // Skip ray result if in attack mode (handled separately)
+        if (this.isAttackMode) {
+            return;
+        }
+        
+        // Check if a ship is clicked
+        if (intersects.length > 0) {
+            // Find the top-level object (ship)
+            let selectedObject = this.getShipFromRaycastResult(intersects);
             
-            if (targetShips.length > 0) {
-                this.attackTarget(targetShips[0].object);
+            if (selectedObject) {
+                console.log('Ship clicked:', selectedObject.userData.id);
+                
+                // Only select our own ships
+                if (selectedObject.userData.isPlayerShip && selectedObject.userData.ownerId === window.USER_INFO.id) {
+                    // Check if we're adding to selection with Shift key
+                    if (event.shiftKey) {
+                        // Add to selection if not already selected
+                        if (!this.selectedShips.includes(selectedObject)) {
+                            this.selectedShips.push(selectedObject);
+                            this.toggleShipSelection(selectedObject, true);
+                        }
+                    } else {
+                        // Clear previous selection
+                        this.clearAllSelections();
+                        
+                        // Select this ship
+                        this.selectedShips = [selectedObject];
+                        this.toggleShipSelection(selectedObject, true);
+                    }
+                    return;
+                }
+            }
+            
+            // Check if clicked on the ground (for movement)
+            const groundClick = intersects.find(result => result.object.userData.isGround);
+            if (groundClick && this.selectedShips.length > 0) {
+                // Move selected ships to this position
+                const targetPosition = groundClick.point;
+                this.moveSelectedShipsTo(targetPosition);
                 return;
             }
         }
         
-        // Check for shift key for multi-select
-        const isMultiSelect = event.shiftKey;
-        
-        // Clear previous selection unless multi-select
-        if (!isMultiSelect) {
-            this.clearSelection();
-        }
-        
-        // Check if clicked on a ship
-        const shipObjects = intersects.filter(intersect => {
-            const object = this.getTopLevelParent(intersect.object);
-            return object.userData.isPlayerShip;
-        });
-        
-        if (shipObjects.length > 0) {
-            const selectedShip = this.getTopLevelParent(shipObjects[0].object);
-            this.selectShip(selectedShip);
+        // If we clicked on nothing or on an opponent's ship, clear selection
+        if (!event.shiftKey) {
+            this.clearAllSelections();
         }
     }
     
     onMouseUp(event) {
-        // End of drag selection or single click
-        this.isDragging = false;
-        
-        // If not in attack mode and not a short drag (which is treated as a click),
-        // handle movement commands
-        if (!this.isAttackMode && 
-            this.selectedShips.length > 0 && 
-            (Math.abs(event.clientX - this.mouseDownX) < 10 && 
-             Math.abs(event.clientY - this.mouseDownY) < 10)) {
+        // Nothing special to do on mouse up for now
+    }
+    
+    // Helper to get ship from raycast result (might be a child object)
+    getShipFromRaycastResult(intersects) {
+        for (let i = 0; i < intersects.length; i++) {
+            let object = intersects[i].object;
             
-            // Calculate mouse position
-            this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+            // Traverse up to find the ship
+            while (object.parent && object.parent !== this.scene) {
+                object = object.parent;
+                
+                // If this is a ship (has userData.id and type)
+                if (object.userData && object.userData.id && 
+                    (object.userData.isPlayerShip || object.userData.isOpponentShip)) {
+                    return object;
+                }
+            }
             
-            // Update the picking ray
-            this.raycaster.setFromCamera(this.mouse, this.camera);
-            
-            // Find intersection with the ground plane
-            const intersects = this.raycaster.intersectObjects(this.scene.children);
-            
-            // Filter for the ground plane
-            const groundIntersects = intersects.filter(intersect => 
-                intersect.object.userData.isGround);
-            
-            if (groundIntersects.length > 0) {
-                // Send movement command to selected ships
-                this.moveShipsTo(groundIntersects[0].point);
+            // Check if the object itself is a ship
+            if (object.userData && object.userData.id && 
+                (object.userData.isPlayerShip || object.userData.isOpponentShip)) {
+                return object;
             }
         }
+        return null;
     }
     
-    onMouseMove(event) {
-        // Update mouse position
-        this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-    }
-    
-    // SHIP SELECTION AND COMMAND METHODS
-    
-    selectShip(ship) {
-        // Add to selection if not already selected
-        if (!this.selectedShips.includes(ship)) {
-            this.selectedShips.push(ship);
-            
-            // Show selection indicator
-            ship.children.forEach(child => {
-                if (child.userData.isSelectionIndicator) {
-                    child.visible = true;
-                }
-            });
-        }
-    }
-    
-    deselectShip(ship) {
-        // Remove from selection
-        const index = this.selectedShips.indexOf(ship);
-        if (index !== -1) {
-            this.selectedShips.splice(index, 1);
-            
-            // Hide selection indicator
-            ship.children.forEach(child => {
-                if (child.userData.isSelectionIndicator) {
-                    child.visible = false;
-                }
-            });
-        }
-    }
-    
-    clearSelection() {
-        // Deselect all ships
-        while (this.selectedShips.length) {
-            this.deselectShip(this.selectedShips[0]);
-        }
-    }
-    
+    // Select all ships
     selectAllShips() {
-        // First clear current selection
-        this.clearSelection();
+        console.log("Selecting all player ships");
         
-        // Then select all player ships
-        this.ships.forEach(ship => {
-            this.selectShip(ship);
+        // Clear previous selection
+        this.clearAllSelections();
+        
+        // Select all player ships
+        this.selectedShips = this.ships.filter(ship => 
+            ship.userData.isPlayerShip && 
+            ship.userData.ownerId === window.USER_INFO.id
+        );
+        
+        // Update visuals
+        this.selectedShips.forEach(ship => {
+            this.toggleShipSelection(ship, true);
         });
     }
     
-    moveShipsTo(targetPosition) {
-        // Calculate formation positions based on number of ships
-        const formationPositions = this.calculateFormationPositions(
-            targetPosition, 
-            this.selectedShips.length
+    // Toggle ship selection visual
+    toggleShipSelection(ship, isSelected) {
+        // Find the selection indicator (ring)
+        const selectionIndicator = ship.children.find(child => 
+            child.userData && child.userData.isSelectionIndicator
         );
         
-        // Assign each ship a position in the formation
+        if (selectionIndicator) {
+            selectionIndicator.visible = isSelected;
+        }
+    }
+    
+    // Clear all ship selections
+    clearAllSelections() {
+        // Hide selection indicator on all ships
+        this.selectedShips.forEach(ship => {
+            this.toggleShipSelection(ship, false);
+        });
+        
+        // Clear selection array
+        this.selectedShips = [];
+    }
+    
+    // Move selected ships to target position
+    moveSelectedShipsTo(targetPosition) {
+        if (this.selectedShips.length === 0) return;
+        
+        console.log(`Moving ${this.selectedShips.length} ships to:`, targetPosition);
+        
+        // Calculate formation positions
+        const positions = this.calculateFormationPositions(targetPosition, this.selectedShips.length);
+        
+        // Set each ship's target position
         this.selectedShips.forEach((ship, index) => {
-            const formationPosition = formationPositions[index];
+            const position = positions[index];
             
-            // Set ship movement target
+            // Update ship data
             ship.userData.isMoving = true;
-            ship.userData.targetPosition = formationPosition;
+            ship.userData.targetPosition = position;
+            ship.userData.startPosition = ship.position.clone();
+            ship.userData.moveStartTime = Date.now();
+            ship.userData.moveDistance = ship.position.distanceTo(position);
+            ship.userData.moveDuration = (ship.userData.moveDistance / ship.userData.speed) * 100; // ms
             
-            // Calculate direction facing target
-            const direction = new THREE.Vector3()
-                .subVectors(formationPosition, ship.position)
-                .normalize();
+            // Create visual indicator for destination
+            this.createMoveIndicator(position, ship.userData.id);
             
-            // Calculate rotation to face movement direction
-            const targetRotation = Math.atan2(direction.x, direction.z);
-            ship.userData.targetRotation = targetRotation;
-            
-            // Send move command to server for opponent to see
+            // Send move command to server to sync with opponent
             this.socket.emit('ship_move', {
                 battle_room: this.battleRoom,
                 ship_id: ship.userData.id,
                 position: {
-                    x: formationPosition.x,
-                    y: formationPosition.y,
-                    z: formationPosition.z
+                    x: position.x,
+                    y: position.y,
+                    z: position.z
                 }
             });
         });
+        
+        // Make ships animated during movement
+        this.updateMovingShips();
     }
     
-    calculateFormationPositions(centerPosition, shipCount) {
+    // Calculate positions for ships in formation
+    calculateFormationPositions(center, count) {
         const positions = [];
+        const spacing = 20; // Space between ships
         
-        // Simple formation: place ships in a grid pattern
-        const gridSize = Math.ceil(Math.sqrt(shipCount));
-        const spacing = 15; // Space between ships
+        // Maximum ships per row based on count
+        let shipsPerRow;
+        if (count <= 3) shipsPerRow = count;
+        else if (count <= 8) shipsPerRow = 3;
+        else shipsPerRow = 4;
         
-        // Calculate starting position for the grid
-        const startX = centerPosition.x - (spacing * (gridSize - 1)) / 2;
-        const startZ = centerPosition.z - (spacing * (gridSize - 1)) / 2;
-        
-        // Generate grid positions
-        for (let i = 0; i < shipCount; i++) {
-            const row = Math.floor(i / gridSize);
-            const col = i % gridSize;
+        for (let i = 0; i < count; i++) {
+            const row = Math.floor(i / shipsPerRow);
+            const col = i % shipsPerRow;
+            const rowWidth = Math.min(count - row * shipsPerRow, shipsPerRow);
             
-            positions.push(new THREE.Vector3(
-                startX + col * spacing,
-                centerPosition.y, // Keep same height
-                startZ + row * spacing
-            ));
+            // Center each row
+            const rowOffset = ((rowWidth - 1) * spacing) / 2;
+            
+            const x = center.x + (col * spacing) - rowOffset;
+            const z = center.z + (row * spacing);
+            
+            positions.push(new THREE.Vector3(x, center.y, z));
         }
         
         return positions;
     }
     
-    attackTarget(targetObject) {
-        // Get the actual target ship (could be a child mesh)
-        const targetShip = this.getTopLevelParent(targetObject);
-        
-        if (!targetShip.userData.isOpponentShip) return;
-        
-        // Command selected ships to attack the target
-        this.selectedShips.forEach(ship => {
-            // Set attack target
-            ship.userData.attackTarget = targetShip;
-            
-            // Send attack command to server
-            this.socket.emit('ship_attack', {
-                battle_room: this.battleRoom,
-                attacker_id: ship.userData.id,
-                target_id: targetShip.userData.id,
-                damage: ship.userData.attackPower
-            });
-        });
-    }
-    
-    setAttackMode() {
-        this.isAttackMode = true;
-        this.isPatrolMode = false;
-        
-        // Visual feedback
-        document.getElementById('attack-mode').style.backgroundColor = 'rgba(255, 100, 0, 0.8)';
-        document.getElementById('patrol-mode').style.backgroundColor = 'rgba(0, 80, 160, 0.8)';
-    }
-    
-    setPatrolMode() {
-        this.isPatrolMode = true;
-        this.isAttackMode = false;
-        
-        // Visual feedback
-        document.getElementById('patrol-mode').style.backgroundColor = 'rgba(0, 255, 100, 0.8)';
-        document.getElementById('attack-mode').style.backgroundColor = 'rgba(200, 60, 0, 0.8)';
-    }
-    
-    retreat() {
-        // Move all selected ships back to starting area
-        const retreatPosition = new THREE.Vector3(-300, 10, 0);
-        this.moveShipsTo(retreatPosition);
-    }
-    
-    updateShipMovement(delta) {
-        // Update position and rotation of ships that are moving
-        this.ships.forEach(ship => {
-            if (ship.userData.isMoving && ship.userData.targetPosition) {
-                // Calculate distance to target
-                const distance = ship.position.distanceTo(ship.userData.targetPosition);
-                
-                // If close enough to target, stop moving
-                if (distance < 1) {
-                    ship.userData.isMoving = false;
-                    ship.userData.targetPosition = null;
-                    return;
-                }
-                
-                // Move towards target at ship's speed
-                const moveSpeed = ship.userData.speed;
-                const direction = new THREE.Vector3()
-                    .subVectors(ship.userData.targetPosition, ship.position)
-                    .normalize();
-                
-                // Apply movement
-                ship.position.add(direction.multiplyScalar(moveSpeed));
-                
-                // Smoothly rotate ship to face movement direction
-                if (ship.userData.targetRotation !== undefined) {
-                    // Interpolate towards target rotation
-                    const currentRotation = ship.rotation.y;
-                    let targetRotation = ship.userData.targetRotation;
-                    
-                    // Normalize angle difference
-                    let angleDiff = targetRotation - currentRotation;
-                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-                    
-                    // Apply rotation with smooth damping
-                    ship.rotation.y += angleDiff * 0.1;
-                }
+    // Create visual indicator for movement destination
+    createMoveIndicator(position, shipId) {
+        // Check if indicator already exists and remove it
+        this.scene.children.forEach(obj => {
+            if (obj.userData && obj.userData.isMoveIndicator && obj.userData.forShip === shipId) {
+                this.scene.remove(obj);
             }
         });
-    }
-    
-    // Handler for opponent ship movements received from server
-    handleOpponentMove(data) {
-        // Find the opponent ship
-        const opponentShip = this.opponentShips.find(ship => 
-            ship.userData.id === data.ship_id);
         
-        if (!opponentShip) return;
-        
-        // Set target position from received data
-        const targetPosition = new THREE.Vector3(
-            data.position.x,
-            data.position.y,
-            data.position.z
-        );
-        
-        // Set movement parameters
-        opponentShip.userData.isMoving = true;
-        opponentShip.userData.targetPosition = targetPosition;
-        
-        // Calculate direction facing target
-        const direction = new THREE.Vector3()
-            .subVectors(targetPosition, opponentShip.position)
-            .normalize();
-        
-        // Calculate rotation to face movement direction
-        const targetRotation = Math.atan2(direction.x, direction.z);
-        opponentShip.userData.targetRotation = targetRotation;
-    }
-    
-    // Handler for opponent ship attacks received from server
-    handleOpponentAttack(data) {
-        // Find the attacking ship and target ship
-        const attackerShip = this.opponentShips.find(ship => 
-            ship.userData.id === data.attacker_id);
-            
-        const targetShip = this.ships.find(ship => 
-            ship.userData.id === data.target_id);
-        
-        if (!attackerShip || !targetShip) return;
-        
-        // Apply damage to target
-        this.applyDamage(targetShip, data.damage);
-        
-        // Create visual effect for the attack
-        this.createLaserEffect(attackerShip, targetShip);
-    }
-    
-    // Helper method to create a laser beam attack effect
-    createLaserEffect(source, target) {
-        // Create a laser beam between the source and target
-        const start = new THREE.Vector3().copy(source.position);
-        const end = new THREE.Vector3().copy(target.position);
-        
-        // Create laser geometry
-        const laserGeometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-        
-        // Create laser material
-        const laserMaterial = new THREE.LineBasicMaterial({
-            color: 0xff0000,
+        // Create a circle to mark the destination
+        const geometry = new THREE.RingGeometry(3, 4, 16);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0x00ff00,
+            side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.7,
-            linewidth: 2
+            opacity: 0.5
         });
         
-        // Create the laser beam
-        const laser = new THREE.Line(laserGeometry, laserMaterial);
-        this.scene.add(laser);
+        const indicator = new THREE.Mesh(geometry, material);
+        indicator.position.set(position.x, 0.1, position.z); // Just above ground
+        indicator.rotation.x = -Math.PI / 2; // Flat on ground
         
-        // Set timeout to remove the laser after a short duration
-        setTimeout(() => {
-            this.scene.remove(laser);
-            laser.geometry.dispose();
-            laser.material.dispose();
-        }, 200);
-    }
-    
-    // Method to apply damage to a ship
-    applyDamage(ship, damage) {
-        // Reduce ship health
-        ship.userData.health -= damage;
-        
-        // Check if ship is destroyed
-        if (ship.userData.health <= 0) {
-            this.destroyShip(ship);
-        } else {
-            // Create damage effect (red flash)
-            const originalColor = ship.material.color.getHex();
-            ship.material.color.set(0xff0000);
-            
-            // Return to original color after a short delay
-            setTimeout(() => {
-                ship.material.color.setHex(originalColor);
-            }, 300);
-        }
-    }
-    
-    // Method to destroy a ship
-    destroyShip(ship) {
-        // Create explosion effect
-        this.createExplosionEffect(ship.position);
-        
-        // Remove from selection if selected
-        this.deselectShip(ship);
-        
-        // Remove from ships array
-        const shipIndex = this.ships.indexOf(ship);
-        if (shipIndex !== -1) {
-            this.ships.splice(shipIndex, 1);
-        }
-        
-        const opponentShipIndex = this.opponentShips.indexOf(ship);
-        if (opponentShipIndex !== -1) {
-            this.opponentShips.splice(opponentShipIndex, 1);
-        }
-        
-        // Remove from scene
-        this.scene.remove(ship);
-        
-        // Update ship counts
-        this.updateShipCounts();
-        
-        // Check win/lose conditions
-        this.checkBattleEndConditions();
-    }
-    
-    // Method to create explosion effect
-    createExplosionEffect(position) {
-        // Create particle explosion
-        const particleCount = 50;
-        const particles = new THREE.Group();
-        
-        for (let i = 0; i < particleCount; i++) {
-            const size = Math.random() * 0.8 + 0.2;
-            const particleGeo = new THREE.SphereGeometry(size, 6, 6);
-            const particleMat = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(
-                    Math.random() * 0.2 + 0.8,  // Bright red
-                    Math.random() * 0.5,        // Some orange
-                    0
-                ),
-                transparent: true,
-                opacity: 0.8
-            });
-            
-            const particle = new THREE.Mesh(particleGeo, particleMat);
-            
-            // Random position around explosion center
-            particle.position.copy(position);
-            particle.position.x += (Math.random() - 0.5) * 5;
-            particle.position.y += (Math.random() - 0.5) * 5;
-            particle.position.z += (Math.random() - 0.5) * 5;
-            
-            // Random velocity
-            particle.userData.velocity = new THREE.Vector3(
-                (Math.random() - 0.5) * 2,
-                (Math.random() - 0.5) * 2,
-                (Math.random() - 0.5) * 2
-            );
-            
-            // Add to particles group
-            particles.add(particle);
-        }
-        
-        this.scene.add(particles);
-        
-        // Animation function
-        let startTime = Date.now();
-        const duration = 1000; // 1 second
-        
-        const animateExplosion = () => {
-            const elapsedTime = Date.now() - startTime;
-            const progress = elapsedTime / duration;
-            
-            if (progress >= 1) {
-                // Remove particles when animation completes
-                this.scene.remove(particles);
-                particles.children.forEach(particle => {
-                    particle.geometry.dispose();
-                    particle.material.dispose();
-                });
-                return;
-            }
-            
-            // Update particle positions and opacity
-            particles.children.forEach(particle => {
-                particle.position.add(particle.userData.velocity);
-                particle.material.opacity = 1 - progress;
-                particle.scale.multiplyScalar(0.98); // Shrink particles
-            });
-            
-            requestAnimationFrame(animateExplosion);
+        // Add animation data
+        indicator.userData = {
+            isMoveIndicator: true,
+            forShip: shipId,
+            createdAt: Date.now(),
+            lifetime: 2000 // ms before fading out
         };
         
-        animateExplosion();
+        this.scene.add(indicator);
     }
     
-    // Method to update ship counts in the UI
-    updateShipCounts() {
-        // Count fighter and capital ships
-        const playerFighters = this.ships.filter(ship => ship.userData.type === 'fighter').length;
-        const playerCapitals = this.ships.filter(ship => ship.userData.type === 'capital').length;
-
-
-        // Update UI
-        document.getElementById('fighters-value').textContent = playerFighters;
-        document.getElementById('capital-ships-value').textContent = playerCapitals;
-    }
-    
-    // Method to check for battle end conditions
-    checkBattleEndConditions() {
-        if (this.ships.length === 0) {
-            // Player lost all ships
-            this.endBattle('opponent');
-        } else if (this.opponentShips.length === 0) {
-            // Opponent lost all ships
-            this.endBattle('player');
-        }
-    }
-    
-    // Method to end the battle
-    endBattle(winner) {
-        // Send battle end notification to server
-        this.socket.emit('end_battle', {
-            battle_room: this.battleRoom,
-            winner: winner === 'player' ? window.USER_INFO.id : this.opponentId,
-            result: winner === 'player' ? 'victory' : 'defeat'
+    // Update moving ships during animation
+    updateMovingShips() {
+        const now = Date.now();
+        
+        // For each ship with a movement target
+        [...this.ships, ...this.opponentShips].forEach(ship => {
+            if (ship.userData.isMoving && ship.userData.targetPosition) {
+                const elapsed = now - ship.userData.moveStartTime;
+                const progress = Math.min(elapsed / ship.userData.moveDuration, 1);
+                
+                if (progress < 1) {
+                    // Calculate interpolated position
+                    const newX = ship.userData.startPosition.x + 
+                        (ship.userData.targetPosition.x - ship.userData.startPosition.x) * progress;
+                    const newZ = ship.userData.startPosition.z + 
+                        (ship.userData.targetPosition.z - ship.userData.startPosition.z) * progress;
+                    
+                    // Update position
+                    ship.position.x = newX;
+                    ship.position.z = newZ;
+                    
+                    // Calculate rotation to face movement direction
+                    if (ship.userData.startPosition.distanceTo(ship.userData.targetPosition) > 1) {
+                        const angle = Math.atan2(
+                            ship.userData.targetPosition.x - ship.userData.startPosition.x,
+                            ship.userData.targetPosition.z - ship.userData.startPosition.z
+                        );
+                        ship.rotation.y = angle;
+                    }
+                } else {
+                    // Movement complete
+                    ship.position.x = ship.userData.targetPosition.x;
+                    ship.position.z = ship.userData.targetPosition.z;
+                    ship.userData.isMoving = false;
+                    ship.userData.targetPosition = null;
+                }
+            }
         });
         
-        // Show end battle message
-        const resultMessage = winner === 'player' ? 'Victory!' : 'Defeat!';
-        const messageColor = winner === 'player' ? 'rgba(46, 204, 113, 0.9)' : 'rgba(231, 76, 60, 0.9)';
-        
-        const messageElement = document.createElement('div');
-        messageElement.style.position = 'fixed';
-        messageElement.style.top = '50%';
-        messageElement.style.left = '50%';
-        messageElement.style.transform = 'translate(-50%, -50%)';
-        messageElement.style.fontSize = '48px';
-        messageElement.style.fontWeight = 'bold';
-        messageElement.style.color = 'white';
-        messageElement.style.textShadow = '0 0 20px ' + messageColor;
-        messageElement.style.zIndex = '1000';
-        messageElement.textContent = resultMessage;
-        
-        document.body.appendChild(messageElement);
-        
-        // Redirect back to main game after a delay
-        setTimeout(() => {
-            window.location.href = '/build';
-        }, 5000);
+        // Handle movement indicators
+        this.scene.children.forEach(obj => {
+            if (obj.userData && obj.userData.isMoveIndicator) {
+                const age = now - obj.userData.createdAt;
+                if (age > obj.userData.lifetime) {
+                    // Remove old indicators
+                    this.scene.remove(obj);
+                } else if (age > obj.userData.lifetime / 2) {
+                    // Fade out
+                    const opacity = 0.5 * (1 - (age - obj.userData.lifetime/2) / (obj.userData.lifetime/2));
+                    obj.material.opacity = opacity;
+                }
+            }
+        });
     }
     
-    // UTILITY METHODS
-    
-    // Helper method to get the top-level parent of a 3D object
-    getTopLevelParent(object) {
-        while (object.parent && !(object.userData.isPlayerShip || object.userData.isOpponentShip)) {
-            object = object.parent;
+    // Handle attack mode
+    setAttackMode(enabled) {
+        this.isAttackMode = enabled;
+        
+        // Toggle UI button
+        const attackButton = document.getElementById('attack-mode');
+        if (attackButton) {
+            if (enabled) {
+                attackButton.classList.add('active');
+            } else {
+                attackButton.classList.remove('active');
+            }
         }
-        return object;
+        
+        console.log(`Attack mode ${enabled ? 'enabled' : 'disabled'}`);
     }
     
-    // GAME LOOP
+    // Handle patrol mode
+    setPatrolMode(enabled) {
+        // Toggle UI button
+        const patrolButton = document.getElementById('patrol-mode');
+        if (patrolButton) {
+            if (enabled) {
+                patrolButton.classList.add('active');
+            } else {
+                patrolButton.classList.remove('active');
+            }
+        }
+        
+        // Not fully implemented yet
+        console.log(`Patrol mode ${enabled ? 'enabled' : 'disabled'} - Feature in development`);
+    }
     
+    // Handle retreat command
+    retreat() {
+        if (this.selectedShips.length === 0) {
+            // If no selection, select all first
+            this.selectAllShips();
+        }
+        
+        // Move all selected ships back to starting position
+        const targetPosition = new THREE.Vector3(-150, 10, 0);
+        this.moveSelectedShipsTo(targetPosition);
+        
+        console.log("Retreat command issued");
+    }
+    
+    // Ship count updates
+    updateShipCounts() {
+        // Count ship types
+        const fighters = this.ships.filter(ship => ship.userData.type === 'fighter').length;
+        const capitals = this.ships.filter(ship => ship.userData.type === 'capital').length;
+        
+        // Update UI
+        const fightersElement = document.getElementById('fighters-value');
+        const capitalsElement = document.getElementById('capital-ships-value');
+        
+        if (fightersElement) fightersElement.textContent = fighters;
+        if (capitalsElement) capitalsElement.textContent = capitals;
+    }
+    
+    // Main render loop
     render() {
         requestAnimationFrame(this.render.bind(this));
         
-        // Update controls
-        this.controls.update();
+        // Update controls if available
+        if (this.controls && typeof this.controls.update === 'function') {
+            this.controls.update();
+        }
         
-        // Update movement
-        this.updateShipMovement();
+        // Get delta time for animations
+        const delta = this.clock.getDelta() * 1000;
         
-        // Update opponent ship movement
-        this.opponentShips.forEach(ship => {
-            if (ship.userData.isMoving && ship.userData.targetPosition) {
-                // Calculate distance to target
-                const distance = ship.position.distanceTo(ship.userData.targetPosition);
-                
-                // If close enough to target, stop moving
-                if (distance < 1) {
-                    ship.userData.isMoving = false;
-                    ship.userData.targetPosition = null;
-                    return;
-                }
-                
-                // Move towards target at ship's speed
-                const moveSpeed = ship.userData.speed || 0.3;
-                const direction = new THREE.Vector3()
-                    .subVectors(ship.userData.targetPosition, ship.position)
-                    .normalize();
-                
-                // Apply movement
-                ship.position.add(direction.multiplyScalar(moveSpeed));
-                
-                // Smoothly rotate ship to face movement direction
-                if (ship.userData.targetRotation !== undefined) {
-                    // Interpolate towards target rotation
-                    const currentRotation = ship.rotation.y;
-                    let targetRotation = ship.userData.targetRotation;
-                    
-                    // Normalize angle difference
-                    let angleDiff = targetRotation - currentRotation;
-                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-                    
-                    // Apply rotation with smooth damping
-                    ship.rotation.y += angleDiff * 0.1;
-                }
+        // Update ship movements
+        this.updateMovingShips();
+        
+        // Simple ship rotation animation for idle ships (no rotation for moving ships)
+        [...this.ships, ...this.opponentShips].forEach(ship => {
+            if (!ship.userData.isMoving) {
+                ship.rotation.y += 0.001;
             }
         });
         
         // Render scene
         this.renderer.render(this.scene, this.camera);
+    }
+    
+    // Initialize network event handlers for combat
+    initNetworkHandlers() {
+        console.log("Setting up network event handlers for combat");
         
-        // Only log on first few frames to avoid console spam
-        if (!this._renderCount) {
-            this._renderCount = 1;
-            console.log('First render frame completed');
-        } else if (this._renderCount < 5) {
-            this._renderCount++;
-            console.log(`Render frame ${this._renderCount} completed`);
-        } else if (this._renderCount === 5) {
-            console.log('Rendering ongoing...');
-            this._renderCount++;
+        // Listen for opponent ship movements
+        this.socket.on('opponent_move', (data) => {
+            this.handleOpponentMove(data);
+        });
+        
+        // Listen for opponent ship attacks (not implemented yet)
+        this.socket.on('opponent_attack', (data) => {
+            console.log('Opponent attack received:', data);
+            // TODO: Implement attack handling
+        });
+    }
+    
+    // Handle opponent ship movement events
+    handleOpponentMove(data) {
+        console.log('Opponent move received:', data);
+        
+        // CRITICAL FIX: Check if the message is about our own ships, in which case ignore it
+        // Parse the ship ID to extract the user ID - "player_USERID_TYPE_INDEX"
+        const idParts = data.ship_id.split('_');
+        if (idParts.length >= 2) {
+            const shipUserId = idParts[1];
+            
+            // If this is a message about our own ship movement, ignore it
+            // This prevents duplicate handling of our own ships
+            if (shipUserId === window.USER_INFO.id.toString()) {
+                console.log('Ignoring movement of our own ship:', data.ship_id);
+                return;
+            }
+        }
+        
+        // Find the ship by ID
+        const ship = this.opponentShips.find(s => s.userData.id === data.ship_id);
+        
+        if (ship) {
+            console.log(`Found opponent ship to move: ${data.ship_id}`);
+            
+            // Convert position data to Vector3
+            const position = new THREE.Vector3(
+                data.position.x,
+                data.position.y,
+                data.position.z
+            );
+            
+            // Set ship movement data
+            ship.userData.isMoving = true;
+            ship.userData.targetPosition = position;
+            ship.userData.startPosition = ship.position.clone();
+            ship.userData.moveStartTime = Date.now();
+            ship.userData.moveDistance = ship.position.distanceTo(position);
+            ship.userData.moveDuration = (ship.userData.moveDistance / ship.userData.speed) * 100; // ms
+            
+            // Create visual indicator for destination
+            this.createMoveIndicator(position, ship.userData.id);
+        } else {
+            console.warn(`Could not find opponent ship with ID: ${data.ship_id}`);
+            console.log('Available opponent ships:', this.opponentShips.map(s => s.userData.id));
         }
     }
 }
 
-// Create global initialization function
+// Initialize the game when the page is loaded
 window.initializeCombatGame = function(data) {
     console.log("Initializing combat game with data:", data);
-    console.log("Window object:", typeof window);
-    console.log("Document object:", typeof document);
+    console.log("Checking THREE.js availability...");
+    console.log("window.THREE:", typeof window.THREE);
     
     try {
-        // Output ships info from data
-        console.log("Player ships:", data.ships);
-        console.log("Opponent ships:", data.opponent_ships);
-        
-        // Validate that THREE.js and OrbitControls are available
+        // Validate that THREE.js is available
         if (!window.THREE) {
             console.error("THREE.js not available during initialization");
             throw new Error("THREE.js not available");
         }
         
-        if (!window.THREE.OrbitControls) {
-            console.error("THREE.OrbitControls not available during initialization");
-            throw new Error("THREE.OrbitControls not available");
-        }
+        console.log("THREE.js version:", window.THREE.REVISION);
         
         // Make sure DOM element exists
         const container = document.getElementById('combat-container');
         if (!container) {
             console.error("Combat container element not found");
             throw new Error("Combat container element not found");
-        } else {
-            console.log("Combat container found:", container);
-            
-            // Check if container has any children
-            console.log("Container has children:", container.children.length);
-            console.log("Container HTML:", container.innerHTML);
         }
         
-        // Create a direct test renderer if needed
-        if (window.TESTING_NEEDED && container.children.length === 0) {
-            console.log("Creating direct test renderer");
-            const testRenderer = new THREE.WebGLRenderer({ antialias: true });
-            testRenderer.setSize(window.innerWidth, window.innerHeight);
-            testRenderer.setClearColor(0x000066);
-            container.appendChild(testRenderer.domElement);
-            return null; // Stop initialization to preserve test renderer
-        }
-        
+        // Create combat game instance
         window.combatGame = new CombatGame(data);
         return window.combatGame;
     } catch (error) {

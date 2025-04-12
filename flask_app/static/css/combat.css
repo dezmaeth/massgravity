@@ -132,6 +132,16 @@ main {
     background-color: rgba(240, 80, 0, 0.8);
 }
 
+.combat-button.active {
+    background-color: rgba(0, 200, 100, 0.8);
+    border-color: rgba(0, 255, 150, 0.5);
+    box-shadow: 0 0 10px rgba(0, 255, 150, 0.5);
+}
+
+.combat-button.active:hover {
+    background-color: rgba(0, 220, 120, 0.8);
+}
+
 .waiting-overlay {
     position: fixed;
     top: 0;

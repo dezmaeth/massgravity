@@ -31,8 +31,8 @@ def combat(opponent_id):
         # Validate opponent_id is an integer
         opponent_id = int(opponent_id)
         
-        # Return the combat template with opponent information
-        return render_template('combat.html', opponent_id=opponent_id)
+        # Return the standalone combat template with opponent information
+        return render_template('combat_standalone.html', opponent_id=opponent_id)
     except ValueError:
         return jsonify({'error': 'Invalid opponent ID'}), 400
 

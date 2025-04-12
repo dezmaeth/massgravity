@@ -13,6 +13,36 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.js"></script>
 <!-- Use non-module version of THREE.js for better compatibility -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- Load OrbitControls -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
+<!-- Load TrackballControls as fallback -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/TrackballControls.js"></script>
+<!-- Manually add OrbitControls to THREE if it's missing -->
+<script>
+if (!THREE.OrbitControls) {
+    console.log("THREE.OrbitControls not detected, trying to add it manually");
+    
+    // Simple fallback control if both OrbitControls and TrackballControls fail
+    THREE.OrbitControls = function(camera, domElement) {
+        this.camera = camera;
+        this.domElement = domElement;
+        
+        // Defaults
+        this.enableDamping = false;
+        this.dampingFactor = 0.05;
+        this.rotateSpeed = 1.0;
+        this.zoomSpeed = 1.0;
+        this.maxPolarAngle = Math.PI;
+        this.minDistance = 0;
+        this.maxDistance = Infinity;
+        
+        // Empty update method
+        this.update = function() {};
+        
+        console.log("Using simple fallback controls");
+    };
+}
+</script>
 {% endblock %}
 
 {% block content %}
@@ -70,12 +100,19 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Load combat scripts using regular script tags -->
+<script src="{{ url_for('static', filename='js/combat.js') }}"></script>
+
 <script>
     // Store user info
     window.USER_INFO = {
         id: {{ current_user.id }},
         username: "{{ current_user.username }}",
-        faction: "{{ current_user.faction }}"
+        faction: "{{ current_user.faction }}",
+        ships: {
+            fighters: 5,
+            capital_ships: 1
+        }
     };
     
     // Store opponent ID
@@ -123,8 +160,28 @@
         document.getElementById('opponent-name').textContent = data.opponent_name;
         document.getElementById('battle-status-text').textContent = 'Battle in progress';
         
-        // We'll continue with our DOMContentLoaded scene for now
-        document.getElementById('battle-status-text').textContent = 'Using test scene - combat module still in progress';
+        // Initialize the combat game with battle data
+        document.getElementById('battle-status-text').textContent = 'Battle in progress';
+        
+        // Initialize combat game with a small delay to ensure all scripts are loaded
+        setTimeout(() => {
+            if (typeof window.initializeCombatGame === 'function') {
+                console.log("Starting combat game initialization...");
+                console.log("THREE.OrbitControls available:", typeof THREE.OrbitControls);
+                
+                window.initializeCombatGame({
+                    battle_room: data.battle_room,
+                    opponent_id: window.OPPONENT_ID,
+                    opponent_name: data.opponent_name,
+                    opponent_faction: data.opponent_faction,
+                    ships: window.USER_INFO.ships,
+                    opponent_ships: data.opponent_ships || { fighters: 5, capital_ships: 1 }
+                });
+            } else {
+                console.error('Combat game initialization function not available');
+                document.getElementById('battle-status-text').textContent = 'Error loading combat module';
+            }
+        }, 500); // 500ms delay to ensure scripts are fully loaded
         
         // Confirm readiness to opponent after a short delay
         setTimeout(function() {
@@ -167,21 +224,8 @@
     });
     
     // Combat UI buttons
-    document.getElementById('select-all').addEventListener('click', function() {
-        alert('Select All clicked - Full combat system coming soon!');
-    });
-    
-    document.getElementById('attack-mode').addEventListener('click', function() {
-        alert('Attack Mode clicked - Full combat system coming soon!');
-    });
-    
-    document.getElementById('patrol-mode').addEventListener('click', function() {
-        alert('Patrol Mode clicked - Full combat system coming soon!');
-    });
-    
-    document.getElementById('retreat').addEventListener('click', function() {
-        alert('Retreat clicked - Full combat system coming soon!');
-    });
+    // The click handlers for these are now set up in the CombatGame class
+    // So we don't need to add them here
     
     // Utility function to show notifications
     function showNotification(message, type = 'info') {
