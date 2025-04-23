@@ -4,6 +4,9 @@ import { Planet } from './objects/planet.js';
 import { Star } from './objects/star.js';
 import { GameUI } from './ui.js';
 import { ShipBuilder } from './shipBuilder.js';
+import { shipsDisplay } from './loaders/theatre.js';
+
+let theatre = true;
 
 // Game state management
 let gameState = {
@@ -505,6 +508,7 @@ class MassGravity {
         // Add a skybox
         this.addSkybox();
         
+        
         // Generate solar system
         this.solar = new THREE.Object3D();
         this.scene.add(this.solar);
@@ -515,13 +519,18 @@ class MassGravity {
         // Calculate solar system center and bounds
         this.solarCenter = new THREE.Vector3(0, 0, 0);
         this.solarRadius = 500; // Default value, will be updated
-        
-        // If we have saved game data, restore it
-        if (gameState.stars && gameState.stars.length > 0 || gameState.planets && gameState.planets.length > 0) {
-            this.restoreSolarSystem();
-        } else {
-            // Otherwise generate a new system
-            this.generateSolarSystem(gameState.seed || Math.random().toString());
+
+        if (theatre) {
+            shipsDisplay(this.scene);
+        }
+        if (!theatre) {
+        // Load ship model into the solar system
+            if (gameState.stars && gameState.stars.length > 0 || gameState.planets && gameState.planets.length > 0) {
+                this.restoreSolarSystem();
+            } else {
+                // Otherwise generate a new system
+                this.generateSolarSystem(gameState.seed || Math.random().toString());
+            }
         }
         
         // Calculate the solar system bounds
