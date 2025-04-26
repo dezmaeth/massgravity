@@ -6,7 +6,7 @@ import { GameUI } from './ui.js';
 import { ShipBuilder } from './shipBuilder.js';
 import { shipsDisplay } from './loaders/theatre.js';
 
-let theatre = true;
+let theatre = false;
 
 // Game state management
 let gameState = {
@@ -522,8 +522,7 @@ class MassGravity {
 
         if (theatre) {
             shipsDisplay(this.scene);
-        }
-        if (!theatre) {
+        } else {
         // Load ship model into the solar system
             if (gameState.stars && gameState.stars.length > 0 || gameState.planets && gameState.planets.length > 0) {
                 this.restoreSolarSystem();

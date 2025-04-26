@@ -4,3 +4,4 @@ node_modules
 __pycache__
 venv
 *.db
+instance/massgravity.db
