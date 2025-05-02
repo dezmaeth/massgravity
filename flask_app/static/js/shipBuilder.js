@@ -32,7 +32,7 @@ export class ShipBuilder {
         header.style.marginBottom = '10px';
         this.shipMenu.appendChild(header);
         
-        // Create close button
+        // Create a close button
         const closeButton = document.createElement('button');
         closeButton.textContent = '×';
         closeButton.className = 'close-button';
@@ -52,7 +52,7 @@ export class ShipBuilder {
         this.content.className = 'build-menu-content';
         this.shipMenu.appendChild(this.content);
         
-        // Add fleet summary section
+        // Add a fleet summary section
         const fleetSummary = document.createElement('div');
         fleetSummary.className = 'fleet-summary';
         fleetSummary.style.marginBottom = '15px';
@@ -202,11 +202,13 @@ export class ShipBuilder {
     buildShip(type, cost, selectedPlanet) {
         if (!this.gameInstance || !selectedPlanet) return;
         
-        const userFaction = window.USER_INFO?.faction || 'blue';
+        const userFaction = window.USER_INFO?.faction;
         
-        // Materials cost based on ship type
+        // Materials cost based on a ship type
         let materialsCost = {};
-        
+
+
+        // TODO remove this, should be dynamic
         if (type === 'fighter') {
             materialsCost[userFaction] = 5; // Only user's faction material
         } else if (type === 'capital_ship') {
@@ -223,7 +225,7 @@ export class ShipBuilder {
             this.gameInstance.gameState.materials[material] -= materialsCost[material];
         }
         
-        // Add ship to fleet
+        // Add ship to fleet TODO this should be initialized on constructor
         if (!this.gameInstance.gameState.ships) {
             this.gameInstance.gameState.ships = { fighters: 0, capital_ships: 0 };
         }

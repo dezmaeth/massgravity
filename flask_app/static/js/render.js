@@ -42,7 +42,7 @@ class Render extends MassGravity {
             const planetPos = new THREE.Vector3();
             this.zoomedPlanet.getWorldPosition(planetPos);
 
-            // Update the controls target to follow the planet
+            // Update the control target to follow the planet
             this.controls.target.copy(planetPos);
 
             // Look at the planet

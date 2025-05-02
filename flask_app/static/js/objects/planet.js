@@ -1,21 +1,20 @@
 import * as THREE from 'three';
 import { createAtmosphereMaterial } from '../materials/atmosphere.js';
-import { createNoiseMaterial } from '../materials/noise.js';
 import { PlanetMaterialGenerator } from '../materials/planetMaterial.js';
+import { loadStructureModel } from '../units/loadStructureModel.js';
 
-// Create a singleton instance of the material generator
 const materialGenerator = new PlanetMaterialGenerator();
 
 export class Planet {
     constructor(options = {}) {
         this.options = {
             radius: options.radius || 10,
-            detail: options.detail || 32,
+            detail: options.detail || 128,
             color: options.color || new THREE.Color(0x44ff44),
             atmosphereColor: options.atmosphereColor || new THREE.Color(0x00b3ff),
             atmosphereScale: options.atmosphereScale || 1.15,
-            cloudSpeed: options.cloudSpeed || 0.0005, // Slowed down cloud rotation
-            rotationSpeed: options.rotationSpeed || 0.0001, // Slowed down planet rotation
+            cloudSpeed: 0.0005 / Math.max(options.radius, 1),
+            rotationSpeed: options.rotationSpeed || 0.0001,
             name: options.name || "Unnamed Planet",
             type: options.type || "Terrestrial",
             resources: options.resources || {
@@ -24,16 +23,14 @@ export class Planet {
                 water: Math.random() * 100
             },
             hasAtmosphere: options.hasAtmosphere !== undefined ? options.hasAtmosphere : true,
-            distanceFromSun: options.distanceFromSun || 100, // Distance from the sun for climate calculation
-            seed: options.seed || Math.random() * 1000, // Random seed for consistent generation
+            distanceFromSun: options.distanceFromSun || 100,
+            seed: options.seed || Math.random() * 1000,
             hasOcean: options.hasOcean !== undefined ? options.hasOcean : true,
-            oceanLevel: options.oceanLevel || 0.65 // Ocean level (0-1)
+            oceanLevel: options.oceanLevel || 0.5
         };
 
-        // Calculate climate type based on distance from sun
         this.determineClimateType();
 
-        // Create container for the planet
         this.container = new THREE.Object3D();
         this.container.userData = {
             isSelectable: true,
@@ -43,67 +40,52 @@ export class Planet {
                 type: this.options.type,
                 climate: this.options.climate,
                 resources: this.options.resources,
-                structures: [] // Will store orbital structures
+                structures: []
             }
         };
 
-        // Create the planet
         this.createPlanet();
-        
-        // Add atmosphere and clouds if needed
         if (this.options.hasAtmosphere) {
             this.createAtmosphere();
             this.createClouds();
         }
-        
-        // Container for orbital structures
+
         this.orbitalsContainer = new THREE.Object3D();
         this.container.add(this.orbitalsContainer);
 
-        // Add animate method to the container
         this.container.animate = (delta) => this.animate(delta);
-        
-        // Add building method to the container
         this.container.addStructure = (type) => this.addStructure(type);
-        
+
         return this.container;
     }
-    
-    // No longer needed - initialization is now synchronous
 
     determineClimateType() {
-        // Get climate zone using the material generator
         const climateZone = materialGenerator.getClimateZone(this.options.distanceFromSun);
         this.options.climate = climateZone.name;
-        
-        console.log(`Planet at distance ${this.options.distanceFromSun} has climate: ${climateZone.name}`);
-        console.log(`Climate colors: land=${climateZone.colors.land.toString(16)}, water=${climateZone.colors.water.toString(16)}`);
-        
-        // Adjust planet features based on climate
+
         if (this.options.climate === 'desert') {
             this.options.hasOcean = false;
             this.options.oceanLevel = 0;
-            this.options.hasAtmosphere = this.options.hasAtmosphere && Math.random() > 0.3; // 30% chance of no atmosphere
+            this.options.hasAtmosphere = this.options.hasAtmosphere && Math.random() > 0.3;
         } else if (this.options.climate === 'ice') {
-            this.options.oceanLevel = 0.4; // Less water, more ice
+            this.options.oceanLevel = 0.4;
         }
     }
 
     createPlanet() {
-        // Create geometry
+        const segments = Math.max(128, this.options.detail || 64);
+
         const geometry = new THREE.SphereGeometry(
             this.options.radius,
-            this.options.detail,
-            this.options.detail
+            segments,
+            segments
         );
 
-        // Get user ID from game state if available
         let userId = 'default';
         if (window.gameState && window.gameState.userId) {
             userId = window.gameState.userId;
         }
 
-        // Generate materials using the procedural generator with user ID for caching
         const planetMaterials = materialGenerator.generatePlanetMaterial({
             distanceFromSun: this.options.distanceFromSun,
             radius: this.options.radius,
@@ -113,164 +95,145 @@ export class Planet {
             userId: userId
         });
 
-        // Create main planet mesh
+
         this.planetMesh = new THREE.Mesh(geometry, planetMaterials.mainMaterial);
         this.planetMesh.castShadow = true;
         this.planetMesh.receiveShadow = true;
         this.container.add(this.planetMesh);
-        
-        // Store generated textures for animation
-        this.planetTextures = planetMaterials.textures;
-        
-        console.log(`Planet material created for ${this.options.name}`);
 
-        // Apply random rotation
         this.planetMesh.rotation.x = Math.random() * Math.PI;
         this.planetMesh.rotation.y = Math.random() * Math.PI;
         this.planetMesh.rotation.z = Math.random() * Math.PI;
 
-        // Ocean temporarily disabled due to rendering issues
         this.oceanMesh = null;
-        
-        // Store generated textures for animation
         this.planetTextures = planetMaterials.textures;
     }
 
     createAtmosphere() {
-        // Set atmosphere color based on climate type
         let atmosphereColor = this.options.atmosphereColor;
         let atmosphereScale = this.options.atmosphereScale;
         let atmosphereDensity = 1.0;
-        
-        // Adjust atmosphere based on climate
+
         switch (this.options.climate) {
             case 'desert':
-                // Thin, reddish atmosphere for desert planets
                 atmosphereColor = new THREE.Color(0xff7700);
                 atmosphereScale = 1.05;
                 atmosphereDensity = 0.4;
                 break;
             case 'tropical':
-                // Thick, slightly blue-green atmosphere
                 atmosphereColor = new THREE.Color(0x00fff7);
                 atmosphereScale = 1.2;
                 atmosphereDensity = 1.2;
                 break;
             case 'temperate':
-                // Blue atmosphere, earth-like
                 atmosphereColor = new THREE.Color(0x00b3ff);
                 atmosphereScale = 1.15;
                 atmosphereDensity = 1.0;
                 break;
             case 'arctic':
-                // Pale blue, thinner atmosphere
                 atmosphereColor = new THREE.Color(0x8eaeff);
                 atmosphereScale = 1.1;
                 atmosphereDensity = 0.7;
                 break;
             case 'ice':
-                // Very pale, thin atmosphere
                 atmosphereColor = new THREE.Color(0xc4e0ff);
                 atmosphereScale = 1.05;
                 atmosphereDensity = 0.5;
                 break;
         }
-        
-        // Inner atmosphere glow
-        const innerGeometry = new THREE.SphereGeometry(
-            this.options.radius,
-            this.options.detail,
-            this.options.detail
-        );
-        
+
+        const innerGeometry = new THREE.SphereGeometry(this.options.radius, this.options.detail, this.options.detail);
         const innerMaterial = createAtmosphereMaterial();
         innerMaterial.uniforms.glowColor.value = atmosphereColor;
-        innerMaterial.uniforms.coeficient.value = 0.8;
-        innerMaterial.uniforms.power.value = 2.0 / atmosphereDensity;
-        
+        innerMaterial.uniforms.coeficient.value = 0.5;
+        innerMaterial.uniforms.power.value = 2.5;
+
         const innerMesh = new THREE.Mesh(innerGeometry, innerMaterial);
         innerMesh.scale.multiplyScalar(1.01);
+        innerMesh.castShadow = false;
+        innerMesh.receiveShadow = false;
         this.container.add(innerMesh);
-        
-        // Outer atmosphere glow
-        const outerGeometry = new THREE.SphereGeometry(
-            this.options.radius,
-            this.options.detail,
-            this.options.detail
-        );
-        
+
+        const outerGeometry = new THREE.SphereGeometry(this.options.radius, this.options.detail, this.options.detail);
         const outerMaterial = createAtmosphereMaterial();
         outerMaterial.side = THREE.BackSide;
         outerMaterial.uniforms.glowColor.value = atmosphereColor;
-        outerMaterial.uniforms.coeficient.value = 0.4;
-        outerMaterial.uniforms.power.value = 4.0 / atmosphereDensity;
-        
+        outerMaterial.uniforms.coeficient.value = 0.3;
+        outerMaterial.uniforms.power.value = 3.5;
+
         const outerMesh = new THREE.Mesh(outerGeometry, outerMaterial);
         outerMesh.scale.multiplyScalar(atmosphereScale);
+        outerMesh.castShadow = false;
+        outerMesh.receiveShadow = false;
         this.container.add(outerMesh);
-        
-        // Store the atmosphere components for animation
-        this.innerAtmosphere = innerMesh;
-        this.outerAtmosphere = outerMesh;
     }
 
+    createCloudMesh(radius, cloudTexture) {
+    // Slightly larger than planet radius to avoid z-fighting
+    const cloudRadius = radius * 1.015;
+
+    // Use a high segment count for a smoother appearance
+    const geometry = new THREE.SphereGeometry(cloudRadius, 64, 48);
+
+    const material = new THREE.MeshPhongMaterial({
+        map: cloudTexture,
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.NormalBlending
+    });
+
+    const cloudMesh = new THREE.Mesh(geometry, material);
+    cloudMesh.name = 'CloudLayer';
+    cloudMesh.castShadow = false;
+    cloudMesh.receiveShadow = false;
+
+    return cloudMesh;
+}
+
     createClouds() {
-        // Create cloud layer with properties based on climate type
         let cloudCoverage = 1.0;
         let cloudOpacity = 0.4;
         let cloudColor = 0xffffff;
         let cloudHeight = 1.02;
-        
-        // Adjust clouds based on climate
+
         switch (this.options.climate) {
             case 'desert':
-                // Minimal clouds for desert planets
                 cloudCoverage = 0.3;
                 cloudOpacity = 0.2;
-                cloudColor = 0xffffee; // Slight yellowish tint
-                cloudHeight = 1.03; // Higher clouds
+                cloudColor = 0xffffee;
+                cloudHeight = 1.03;
                 break;
             case 'tropical':
-                // Heavy cloud cover for tropical planets
                 cloudCoverage = 1.5;
                 cloudOpacity = 0.6;
                 cloudColor = 0xffffff;
                 cloudHeight = 1.02;
                 break;
             case 'temperate':
-                // Moderate cloud cover
                 cloudCoverage = 1.0;
                 cloudOpacity = 0.4;
                 cloudColor = 0xffffff;
                 cloudHeight = 1.02;
                 break;
             case 'arctic':
-                // Sparse high clouds
                 cloudCoverage = 0.7;
                 cloudOpacity = 0.5;
-                cloudColor = 0xf0f8ff; // Very light blue tint
+                cloudColor = 0xf0f8ff;
                 cloudHeight = 1.025;
                 break;
             case 'ice':
-                // Minimal clouds
                 cloudCoverage = 0.4;
                 cloudOpacity = 0.3;
                 cloudColor = 0xf0f8ff;
                 cloudHeight = 1.015;
                 break;
         }
-        
-        // Create cloud layer
-        const cloudGeometry = new THREE.SphereGeometry(
-            this.options.radius * cloudHeight,
-            this.options.detail,
-            this.options.detail
-        );
-        
-        // Generate cloud texture based on climate
-        const cloudTexture = this.generateCloudTexture(cloudCoverage);
-        
-        // Custom cloud material
+
+
+        const cloudTexture = materialGenerator.generateCloudTexture(cloudCoverage);
+
         const cloudMaterial = new THREE.MeshStandardMaterial({
             color: cloudColor,
             transparent: true,
@@ -279,189 +242,83 @@ export class Planet {
             side: THREE.DoubleSide,
             depthWrite: false
         });
-        
-        this.cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
-        this.container.add(this.cloudMesh);
+
+        const cloudMesh = this.createCloudMesh(this.options.radius, cloudTexture);
+        this.container.add(cloudMesh);
     }
 
-    generateCloudTexture(coverage = 1.0) {
-        const size = 512;
-        
-        // Create canvas
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        
-        const context = canvas.getContext('2d');
-        
-        // Fill with black
-        context.fillStyle = '#000';
-        context.fillRect(0, 0, size, size);
-        
-        // Add perlin noise cloud patterns
-        const imageData = context.getImageData(0, 0, size, size);
-        const data = imageData.data;
-        
-        // Add noise pattern for cloud formation
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-                const index = (y * size + x) * 4;
-                
-                // Generate cloud pattern using multiple noise octaves
-                const nx = x / size * 4;
-                const ny = y / size * 4;
-                
-                // Use simplified noise approximation
-                let noise = 0;
-                noise += Math.sin((nx + this.options.seed) * 10) * 0.5 + 0.5;
-                noise += Math.sin((ny + this.options.seed) * 12) * 0.5 + 0.5;
-                noise += Math.sin((nx + ny + this.options.seed) * 5) * 0.5 + 0.5;
-                noise /= 3.0;
-                
-                // Apply coverage threshold - higher coverage means more clouds
-                const threshold = 0.6 - (coverage * 0.2); // Values from 0.2 to 0.6 based on coverage
-                const cloudValue = noise > threshold ? (noise - threshold) / (1 - threshold) : 0;
-                
-                // Store cloud value
-                const value = Math.floor(cloudValue * 255);
-                data[index] = value;     // R
-                data[index + 1] = value; // G
-                data[index + 2] = value; // B
-                data[index + 3] = 255;   // A
-            }
-        }
-        
-        context.putImageData(imageData, 0, 0);
-        
-        // Add some larger cloud formations
-        const nClouds = Math.floor(10 * coverage);
-        context.fillStyle = '#fff';
-        context.globalCompositeOperation = 'screen';
-        
-        for (let i = 0; i < nClouds; i++) {
-            const x = Math.floor(Math.random() * size);
-            const y = Math.floor(Math.random() * size);
-            const r = Math.floor((Math.random() * 60) + 40) * coverage;
-            
-            // Draw cloud patches
-            context.beginPath();
-            context.arc(x, y, r, 0, Math.PI * 2);
-            context.fill();
-        }
-        
-        // Create texture from canvas
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        
-        return texture;
-    }
-    
-    addStructure(type) {
-        // Create orbital structure based on type
-        let structure;
-        let orbitRadius = this.options.radius * 1.8; // Base orbit radius
-        let orbitSpeed = 0.00005; // Very slow orbit speed
-        let color, scale;
-        
-        // Configure structure based on type
-        switch(type) {
+    async addStructure(type) {
+        const meshNameMap = {
+            mining: 'station_Minning_1',
+            colony: 'station_ColonyBase_1',
+            // Add more as needed
+        };
+
+        let orbitRadius = this.options.radius * 1.8;
+        let orbitSpeed = 0.00005;
+        let scale = 0.15;
+        let color = 0xffffff;
+
+        switch (type) {
             case 'mining':
-                color = 0xffcc00; // Gold color for mining
+                color = 0xffcc00;
                 scale = 0.15;
                 orbitRadius = this.options.radius * 1.6;
                 break;
             case 'research':
-                color = 0x00ccff; // Blue for research
+                color = 0x00ccff;
                 scale = 0.2;
                 orbitRadius = this.options.radius * 2.0;
                 break;
             case 'colony':
-                color = 0x00ff44; // Green for colony
+                color = 0x00ff44;
                 scale = 0.25;
                 orbitRadius = this.options.radius * 2.4;
                 break;
             case 'defense':
-                color = 0xff3300; // Red for defense
+                color = 0xff3300;
                 scale = 0.18;
                 orbitRadius = this.options.radius * 1.8;
                 break;
-            default:
-                color = 0xffffff;
-                scale = 0.15;
         }
-        
-        // Create simple cube structure for now
-        const geometry = new THREE.BoxGeometry(
-            this.options.radius * scale,
-            this.options.radius * scale,
-            this.options.radius * scale
-        );
-        
-        const material = new THREE.MeshStandardMaterial({
-            color: color,
-            metalness: 0.8,
-            roughness: 0.2,
-            emissive: color,
-            emissiveIntensity: 0.2
-        });
-        
-        structure = new THREE.Mesh(geometry, material);
-        structure.castShadow = true;
-        structure.receiveShadow = true;
-        
-        // Create orbit container
-        const orbitContainer = new THREE.Object3D();
-        orbitContainer.add(structure);
-        
-        // Position structure at orbit distance
-        structure.position.x = orbitRadius;
-        
-        // Randomize initial position in orbit
-        orbitContainer.rotation.y = Math.random() * Math.PI * 2;
-        orbitContainer.rotation.x = (Math.random() - 0.5) * 0.3; // Slight tilt to orbit
-        
-        // Store orbital data
-        orbitContainer.userData = {
-            type: type,
-            orbitSpeed: orbitSpeed
-        };
-        
-        // Add to orbitals container
-        this.orbitalsContainer.add(orbitContainer);
-        
-        // Add to planet data for saving
-        this.container.userData.planetData.structures.push({
-            type: type,
-            orbitRadius: orbitRadius,
-            orbitAngle: orbitContainer.rotation.y,
-            orbitTilt: orbitContainer.rotation.x,
-            scale: scale,
-            color: color
-        });
-        
-        return orbitContainer;
+
+        const meshName = meshNameMap[type];
+        if (!meshName) {
+            console.warn(`No mesh defined for "${type}", skipping.`);
+            return;
+        }
+
+        try {
+            const model = await loadStructureModel(meshName);
+
+            const orbitContainer = new THREE.Object3D();
+            orbitContainer.add(model);
+            model.position.x = orbitRadius;
+
+            orbitContainer.rotation.y = Math.random() * Math.PI * 2;
+            orbitContainer.rotation.x = (Math.random() - 0.5) * 0.3;
+
+            orbitContainer.userData = { type, orbitSpeed };
+            this.orbitalsContainer.add(orbitContainer);
+
+            this.container.userData.planetData.structures.push({
+                type, orbitRadius, orbitAngle: orbitContainer.rotation.y,
+                orbitTilt: orbitContainer.rotation.x, scale, color
+            });
+
+            return orbitContainer;
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     animate(delta) {
-        // Rotate planet
         if (this.planetMesh) {
             this.planetMesh.rotation.y += this.options.rotationSpeed * delta;
         }
-        
-        // Rotate clouds at a different speed
         if (this.cloudMesh) {
             this.cloudMesh.rotation.y += this.options.cloudSpeed * delta;
         }
-        
-        // Ocean animation disabled
-        
-        // Animate atmosphere if needed
-        if (this.innerAtmosphere) {
-            // Possible future enhancement: add subtle atmospheric movement
-        }
-        
-        // Animate orbital structures
         if (this.orbitalsContainer) {
             this.orbitalsContainer.children.forEach(orbit => {
                 orbit.rotation.y += orbit.userData.orbitSpeed * delta;

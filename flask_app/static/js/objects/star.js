@@ -16,7 +16,7 @@ export class Star {
             luminosity: options.luminosity || 1
         };
 
-        // Create container for the star
+        // Create a container for the star
         this.container = new THREE.Object3D();
         this.container.userData = {
             isSelectable: true,
@@ -95,33 +95,24 @@ export class Star {
 
     createLight() {
         // Add point light with increased intensity
-        const light = new THREE.PointLight(0xffffff, 2, 0);
+        const light = new THREE.PointLight(0xffffff, 4, 0, 0, 200);
+        light.power = 50;
         light.castShadow = true;
         
         // Set up shadow parameters
-        light.shadow.mapSize.width = 2048;
-        light.shadow.mapSize.height = 2048;
-        light.shadow.camera.near = 0.01;
-        light.shadow.camera.far = 500;
-        
-        // Add a second light with no shadows to enhance illumination
-        const fillLight = new THREE.PointLight(0xffffcc, 0.5, 0);
-        fillLight.castShadow = false;
+        light.shadow.mapSize.width = 4096;
+        light.shadow.mapSize.height = 4096;
+        light.shadow.camera.near = 0.0005;
+        light.shadow.normalBias = 0.02;
+        light.shadow.camera.far = 1000;
         
         this.container.add(light);
-        this.container.add(fillLight);
     }
 
     animate(delta) {
         // Rotate star
         if (this.starMesh) {
             this.starMesh.rotation.y += this.options.rotationSpeed * delta;
-        }
-        
-        // Add random flickering to the light intensity
-        const light = this.container.children.find(child => child instanceof THREE.PointLight);
-        if (light) {
-            light.intensity = 1 + Math.sin(Date.now() * 0.001) * 0.05;
         }
     }
 }

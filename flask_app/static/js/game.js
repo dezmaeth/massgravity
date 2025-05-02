@@ -5,6 +5,8 @@ import { Star } from './objects/star.js';
 import { GameUI } from './ui.js';
 import { ShipBuilder } from './shipBuilder.js';
 import { shipsDisplay } from './loaders/theatre.js';
+import { PlanetMaterialGenerator } from './materials/planetMaterial.js';
+const materialGenerator = new PlanetMaterialGenerator();
 
 let theatre = false;
 
@@ -47,7 +49,7 @@ class MassGravity {
         this.gameSettings = {
             orbitSpeedFactor: 0.00001, // Default value, will be updated from server
             miningRate: 5,             // Default value, will be updated from server
-            miningInterval: 60         // Default value in seconds, will be updated from server
+            miningInterval: 60         // The default value in seconds will be updated from the server
         };
         
         // Store reference to gameState
@@ -245,6 +247,10 @@ class MassGravity {
                     });
                     
                     if (planet) {
+                        const distanceFromSun = orbit.userData.orbitDistance || 100;
+                        const radius = planet.children?.[0]?.geometry?.parameters?.radius || 10;
+                        const seed = planet.userData.planetData.seed || Math.random() * 1000;
+
                         const planetData = {
                             position: {
                                 x: planet.position.x,
@@ -257,8 +263,14 @@ class MassGravity {
                                 tilt: orbit.userData.orbitTilt,
                                 angle: orbit.rotation.y
                             },
-                            data: planet.userData.planetData
+                            data: {
+                                ...planet.userData.planetData,
+                                seed,
+                                radius,
+                                distanceFromSun
+                            }
                         };
+
                         gameState.planets.push(planetData);
                     }
                 });
@@ -327,7 +339,7 @@ class MassGravity {
     
     saveGameData() {
         // Wrapper around saveGame for UI class to use
-        this.saveGame();
+        this.saveGame().then(r => console.log("saveGameData - saveGame complete:", r));
     }
     
     initComponents() {
@@ -338,8 +350,11 @@ class MassGravity {
         this.renderer.setClearColor(new THREE.Color(0x000000), 1);
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // shadow settings
         this.renderer.shadowMap.enabled = true;
-        
+        this.renderer.shadowMap.type = THREE.VSMShadowMap;
+
         // Add renderer to DOM
         const container = document.getElementById('game-container');
         container.appendChild(this.renderer.domElement);
@@ -368,7 +383,7 @@ class MassGravity {
         
         this.updateLoadingProgress(60);
         
-        // Set up clock for animations
+        // Set up the clock for animations
         this.clock = new THREE.Clock();
         this.timeScale = 1.0;
         
@@ -377,7 +392,7 @@ class MassGravity {
         this.mouse = new THREE.Vector2();
         this.selectedObject = null;
         
-        // For double click detection
+        // For double-click detection
         this.clickCount = 0;
         this.clickTimer = null;
         this.doubleClickDelay = 300; // ms
@@ -391,7 +406,7 @@ class MassGravity {
         this.updateLoadingProgress(70);
         
         // Add ambient light with increased intensity
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // soft white light
         this.scene.add(ambientLight);
         
         // Add a skybox
@@ -405,14 +420,14 @@ class MassGravity {
         // Initialize orbits array
         this.orbits = [];
         
-        // Calculate solar system center and bounds
+        // Calculate a solar system center and bounds
         this.solarCenter = new THREE.Vector3(0, 0, 0);
-        this.solarRadius = 500; // Default value, will be updated
+        this.solarRadius = 300; // Default value, will be updated
 
         if (theatre) {
             shipsDisplay(this.scene);
         } else {
-        // Load ship model into the solar system
+        // Load a ship model into the solar system
             if (gameState.stars && gameState.stars.length > 0 || gameState.planets && gameState.planets.length > 0) {
                 this.restoreSolarSystem();
             } else {
@@ -432,7 +447,7 @@ class MassGravity {
         let maxDistanceSq = 0;
         let center = new THREE.Vector3();
         
-        // Count number of objects
+        // Count the number of objects
         let count = 0;
         
         // Check stars
@@ -489,7 +504,7 @@ class MassGravity {
         // Make the game instance available globally for ShipBuilder
         window.massGravity = this;
         
-        // We're using window.buildMenuUI which is set up in build.html
+        // We're using window.buildMenuUI, which is set up in build.html
         console.log("initUI - window.buildMenuUI available:", !!window.buildMenuUI);
         
         // Update resource display
@@ -804,97 +819,78 @@ class MassGravity {
     }
     
     restoreSolarSystem() {
-        // Restore stars first
+        // Restore stars
         if (gameState.stars) {
             gameState.stars.forEach(starData => {
-                if (!starData || !starData.data) {
-                    console.warn('Invalid star data found in game state');
-                    return;
-                }
+                if (!starData || !starData.data) return;
 
-                // Create default data if any properties are missing
-                const starConfig = {
+                const star = new Star({
                     name: starData.data.name || 'Unknown Star',
                     type: starData.data.type || 'Main Sequence',
                     temperature: starData.data.temperature || 5500,
                     luminosity: starData.data.luminosity || 1.0
-                };
-                
-                const star = new Star(starConfig);
-                
-                // Use position from saved data or default
+                });
+
                 const pos = starData.position || { x: 0, y: 0, z: 0 };
                 star.position.set(pos.x, pos.y, pos.z);
-                
                 this.solar.add(star);
             });
         }
-        
-        // Restore planets with orbits
+
+        // Restore planets
         if (gameState.planets) {
             gameState.planets.forEach(planetData => {
-                if (!planetData || !planetData.data) {
-                    console.warn('Invalid planet data found in game state');
-                    return;
-                }
+                if (!planetData || !planetData.data) return;
 
-                // Create default data if any properties are missing
-                const planetConfig = {
-                    name: planetData.data.name || 'Unknown Planet',
-                    type: planetData.data.type || 'Terrestrial',
-                    resources: planetData.data.resources || { minerals: 50, energy: 50, water: 50 }
-                };
-                
-                const planet = new Planet(planetConfig);
-                
-                // Create orbit container
+                const orbitDistance = planetData.orbit?.distance || 100;
+                const distanceFromSun = orbitDistance;
+                const seed = planetData.data.seed || Math.random() * 1000;
+
+                const climate = materialGenerator.getClimateZone(distanceFromSun).name;
+
+                const hasOcean = !(climate === 'desert' || climate === 'ice');
+                const hasAtmosphere = !(climate === 'ice' && Math.random() < 0.3);
+
+                const planet = new Planet({
+                    radius: planetData.data.radius || 10,
+                    name: planetData.data.name || 'Unnamed Planet',
+                    type: climate,
+                    seed,
+                    distanceFromSun,
+                    hasOcean,
+                    hasAtmosphere,
+                    resources: planetData.data.resources || {
+                        minerals: 50,
+                        energy: 50,
+                        water: 50
+                    }
+                });
+
                 const orbitContainer = new THREE.Object3D();
                 this.solar.add(orbitContainer);
-                
-                // Set orbit properties
-                let orbitDistance = 100;
-                let orbitalPeriod = 0.001;
-                let orbitTilt = 0;
-                let currentAngle = 0;
-                
-                // Use saved orbit data if available
-                if (planetData.orbit) {
-                    orbitDistance = planetData.orbit.distance || 100;
-                    orbitalPeriod = planetData.orbit.period || 0.001;
-                    orbitTilt = planetData.orbit.tilt || 0;
-                    currentAngle = planetData.orbit.angle || 0;
-                } else {
-                    // Calculate basic orbit from position
-                    const pos = planetData.position || { x: 100, y: 0, z: 0 };
-                    orbitDistance = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
-                    
-                    // Give it a random angle instead of syncing to time
-                    currentAngle = Math.random() * Math.PI * 2;
-                    
-                    // Calculate period based on distance using the orbit speed factor from settings
-                    orbitalPeriod = Math.sqrt(Math.pow(orbitDistance, 3)) * this.gameSettings.orbitSpeedFactor;
-                }
-                
-                // Position planet in orbit
+
+                // Restore orbit settings
+                const orbitalPeriod = planetData.orbit?.period || Math.sqrt(Math.pow(orbitDistance, 3)) * this.gameSettings.orbitSpeedFactor;
+                const orbitTilt = planetData.orbit?.tilt || 0;
+                const initialAngle = planetData.orbit?.angle || Math.random() * Math.PI * 2;
+
                 planet.position.x = orbitDistance;
-                
-                // Apply orbit tilt and angle
+
                 orbitContainer.rotation.x = orbitTilt;
-                orbitContainer.rotation.y = currentAngle;
-                
-                // Store orbit data
+                orbitContainer.rotation.y = initialAngle;
+
                 orbitContainer.userData = {
-                    orbitalPeriod: orbitalPeriod,
-                    orbitDistance: orbitDistance,
-                    orbitTilt: orbitTilt
+                    orbitalPeriod,
+                    orbitDistance,
+                    orbitTilt,
+                    initialAngle
                 };
-                
-                // Add planet to orbit container
+
                 orbitContainer.add(planet);
                 this.orbits.push(orbitContainer);
-                
-                // Add any saved structures to the planet
-                if (planetData.data.structures && Array.isArray(planetData.data.structures) && planetData.data.structures.length > 0) {
+
+                // Restore structures
+                if (Array.isArray(planetData.data.structures)) {
                     planetData.data.structures.forEach(structure => {
                         if (structure && structure.type) {
                             planet.addStructure(structure.type);
@@ -904,161 +900,83 @@ class MassGravity {
             });
         }
     }
+
     
     generateSolarSystem(seed) {
-        // Use a simple random function with seed
         const rng = this.seededRandom(seed);
-        
-        // Star names
-        const starNames = [
-            "Sol", "Proxima", "Sirius", "Alpha Centauri", "Vega", 
-            "Rigel", "Betelgeuse", "Antares", "Arcturus", "Pollux"
-        ];
-        
-        // Planet names
-        const planetNames = [
-            "Terra", "Novus", "Ares", "Aquarius", "Hyperion", 
-            "Kronos", "Atlas", "Helios", "Orion", "Thetis",
-            "Gaia", "Calypso", "Triton", "Proteus", "Dione"
-        ];
-        
-        // Create star
+
+        const starNames = ["Sol", "Proxima", "Sirius", "Alpha Centauri", "Vega",
+            "Rigel", "Betelgeuse", "Antares", "Arcturus", "Pollux"];
+        const planetNames = ["Terra", "Novus", "Ares", "Aquarius", "Hyperion",
+            "Kronos", "Atlas", "Helios", "Orion", "Thetis", "Gaia", "Calypso",
+            "Triton", "Proteus", "Dione"];
+
+        // Create a central star
         const star = new Star({
             radius: 20 + rng() * 20,
             name: starNames[Math.floor(rng() * starNames.length)],
-            color: new THREE.Color(
-                0.9 + rng() * 0.1,
-                0.6 + rng() * 0.3,
-                0.2 + rng() * 0.2
-            ),
-            glowColor: new THREE.Color(
-                0.9 + rng() * 0.1,
-                0.7 + rng() * 0.3,
-                0.3 + rng() * 0.2
-            )
+            color: new THREE.Color(0.9 + rng() * 0.1, 0.6 + rng() * 0.3, 0.2 + rng() * 0.2),
+            glowColor: new THREE.Color(0.9 + rng() * 0.1, 0.7 + rng() * 0.3, 0.3 + rng() * 0.2)
         });
         this.solar.add(star);
-        
-        // Create planets
+
         const numPlanets = 3 + Math.floor(rng() * 5);
-        
+
         for (let i = 0; i < numPlanets; i++) {
-            // Generate random planet attributes
-            const planetRadius = 5 + rng() * 10;
-            
-            // Random planet type and appearance
-            const planetTypes = ["Terrestrial", "Gas Giant", "Ice Giant", "Desert", "Ocean"];
-            const planetType = planetTypes[Math.floor(rng() * planetTypes.length)];
-            
-            let planetColor;
-            let hasAtmosphere = true;
-            let atmosphereColor;
-            
-            // Set appearance based on type
-            switch (planetType) {
-                case "Terrestrial":
-                    planetColor = new THREE.Color(
-                        0.2 + rng() * 0.3,
-                        0.4 + rng() * 0.4,
-                        0.2 + rng() * 0.3
-                    );
-                    atmosphereColor = new THREE.Color(0x00b3ff);
-                    break;
-                case "Gas Giant":
-                    planetColor = new THREE.Color(
-                        0.6 + rng() * 0.3,
-                        0.6 + rng() * 0.3,
-                        0.5 + rng() * 0.3
-                    );
-                    atmosphereColor = new THREE.Color(
-                        0.6 + rng() * 0.3,
-                        0.6 + rng() * 0.3,
-                        0.7 + rng() * 0.3
-                    );
-                    break;
-                case "Ice Giant":
-                    planetColor = new THREE.Color(
-                        0.4 + rng() * 0.2,
-                        0.5 + rng() * 0.3,
-                        0.7 + rng() * 0.3
-                    );
-                    atmosphereColor = new THREE.Color(0x88ccff);
-                    break;
-                case "Desert":
-                    planetColor = new THREE.Color(
-                        0.7 + rng() * 0.3,
-                        0.6 + rng() * 0.3,
-                        0.4 + rng() * 0.2
-                    );
-                    atmosphereColor = new THREE.Color(0xffcc88);
-                    break;
-                case "Ocean":
-                    planetColor = new THREE.Color(
-                        0.1 + rng() * 0.2,
-                        0.3 + rng() * 0.3,
-                        0.6 + rng() * 0.4
-                    );
-                    atmosphereColor = new THREE.Color(0x0088ff);
-                    break;
-            }
-            
-            // Random resources
+            const radius = 5 + rng() * 10;
+            const distanceFromSun = 80 + i * 50 + rng() * 20;
+            const seedValue = rng() * 1000;
+
+            // Infer climate from a distance using the same generator as materials
+            const climate = materialGenerator.getClimateZone(distanceFromSun).name;
+
+            // Adjust ocean and atmosphere settings based on climate
+            const hasOcean = !(climate === "desert" || climate === "ice");
+            const hasAtmosphere = !(climate === "ice" && Math.random() < 0.3); // thin or no atmosphere for icy worlds
+
             const resources = {
                 minerals: rng() * 100,
                 energy: rng() * 100,
                 water: rng() * 100
             };
-            
-            // Create the planet
+
             const planet = new Planet({
-                radius: planetRadius,
+                radius,
                 name: planetNames[i % planetNames.length] + " " + (i + 1),
-                type: planetType,
-                color: planetColor,
-                atmosphereColor: atmosphereColor,
-                hasAtmosphere: hasAtmosphere,
-                resources: resources,
-                rotationSpeed: 0.0001, // Very slow rotation
-                cloudSpeed: 0.0005 // Very slow cloud rotation
+                type: "Auto", // you can keep this or replace it with `climate`
+                distanceFromSun,
+                hasOcean,
+                hasAtmosphere,
+                seed: seedValue,
+                resources,
+                rotationSpeed: 0.0001,
+                cloudSpeed: 0.0005
             });
-            
-            // Calculate orbit properties
-            const orbitDistance = 80 + i * 50 + rng() * 20;
-            
-            // Create orbit container
+
             const orbitContainer = new THREE.Object3D();
             this.solar.add(orbitContainer);
-            
-            // Calculate orbital period based on distance (using Kepler's third law as inspiration)
-            // Slower periods for further planets
-            // Use the orbit speed factor from settings
-            const orbitalPeriod = Math.sqrt(Math.pow(orbitDistance, 3)) * this.gameSettings.orbitSpeedFactor;
-            
-            // Give each planet a random starting position
+
+            const orbitalPeriod = Math.sqrt(Math.pow(distanceFromSun, 3)) * this.gameSettings.orbitSpeedFactor;
             const initialAngle = rng() * Math.PI * 2;
-            
-            // Position planet at the correct distance
-            planet.position.x = orbitDistance;
-            
-            // Add slight tilt to orbit
             const orbitTilt = (rng() - 0.5) * 0.2;
+
+            planet.position.x = distanceFromSun;
+
             orbitContainer.rotation.x = orbitTilt;
-            
-            // Set initial position with random angle
             orbitContainer.rotation.y = initialAngle;
-            
-            // Store orbit data for animation
+
             orbitContainer.userData = {
-                orbitalPeriod: orbitalPeriod,
-                orbitDistance: orbitDistance,
-                orbitTilt: orbitTilt,
-                initialAngle: initialAngle
+                orbitalPeriod,
+                orbitDistance: distanceFromSun,
+                orbitTilt,
+                initialAngle
             };
-            
+
             orbitContainer.add(planet);
             this.orbits.push(orbitContainer);
         }
-    }
+}
+
     
     // Request resource update via Socket.IO
     requestResourceUpdate() {
@@ -1090,7 +1008,7 @@ class MassGravity {
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize());
         
-        // Update resource display periodically without generating anything
+        // Update the resource display periodically without generating anything
         setInterval(() => this.updateResourceDisplay(), 5000);
         
         // Set up socket listeners for WebSocket events

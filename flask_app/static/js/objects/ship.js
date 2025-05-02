@@ -23,7 +23,7 @@ class Ship {
         // Create the 3D object
         this.object = this.createShipObject();
         
-        // Set initial position
+        // Set the initial position
         this.object.position.set(
             this.config.position.x,
             this.config.position.y,

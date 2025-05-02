@@ -55,7 +55,7 @@ def save_game():
     updated_data = current_user.update_resources()
     db.session.commit()
     
-    # Return the updated data so client can sync
+    # Return the updated data so a client can sync
     return jsonify({'success': True, 'updated_data': updated_data})
 
 @main.route('/api/load_game', methods=['GET'])
@@ -70,7 +70,7 @@ def load_game():
     try:
         # Always update resources when loading the game
         # The update_resources function will calculate resources based on time elapsed
-        # since the last update, even if user was offline
+        # since the last update, even if a user was offline
         updated_data = current_user.update_resources(force_update=True)
         db.session.commit()
         

@@ -45,7 +45,7 @@ export class PlanetMaterialGenerator {
             { name: 'arctic', maxDistance: 300, colors: { land: 0xd8e4ff, water: 0x0d47a1 } },
             { name: 'ice', maxDistance: Infinity, colors: { land: 0xffffff, water: 0x82b1ff } }
         ];
-        
+
         // Set up cache limit to prevent memory issues
         this.maxCacheSize = 25; // Maximum number of entries in the in-memory cache
     }
@@ -255,7 +255,7 @@ export class PlanetMaterialGenerator {
         let emissiveColor;
         let emissiveIntensity = 0.15;
         
-        // Adjust emissive color based on climate type to enhance visibility
+        // Adjust emissive color based on a climate type to enhance visibility
         switch(climateZone.name) {
             case 'desert':
                 emissiveColor = new THREE.Color(0x553311); // Warm glow for desert
@@ -281,21 +281,22 @@ export class PlanetMaterialGenerator {
                 emissiveColor = new THREE.Color(0x333333);
         }
         
-        // Use MeshPhysicalMaterial for more realistic appearance
+        // Use MeshPhysicalMaterial for a more realistic appearance
         const material = new THREE.MeshPhysicalMaterial({
+            flatShading: false,
             map: textures.diffuse,
             normalMap: textures.normal,
-            normalScale: new THREE.Vector2(1.0, 1.0),
+            normalScale: new THREE.Vector2(0.5, 0.5), // instead of 1.0
             displacementMap: textures.height,
-            displacementScale: radius * 0.05,
+            displacementScale: Math.min(radius * 0.002, 0.05),
             roughnessMap: textures.roughness,
             roughness: 0.85,
             metalness: 0.1,
             clearcoat: 0.1,
             clearcoatRoughness: 0.4,
             envMapIntensity: 1.0,
-            emissive: emissiveColor,
-            emissiveIntensity: emissiveIntensity
+            emissive: new THREE.Color(0x000000), // TODO disabled emissive color for now
+            emissiveIntensity: 0 // TODO disabled emissive color for now
         });
 
         // Ocean material disabled for now
@@ -326,6 +327,61 @@ export class PlanetMaterialGenerator {
         }
         return this.climateZones[this.climateZones.length - 1]; // Default to last zone
     }
+
+    /**
+     * Generate a cloud texture for the planeet
+     * @param {number} coverage -
+     * @param {number} seed - Random seed for consistent generation
+     * @returns {THREE.CanvasTexture} Cloud texture
+     */
+    generateCloudTexture(coverage = 0.5, seed = 42) {
+        const size = 64;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+
+        const context = canvas.getContext('2d');
+        const imageData = context.createImageData(size, size);
+        const data = imageData.data;
+
+        // Generate soft noise-based clouds with alpha fade
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const index = (y * size + x) * 4;
+                const nx = (x / size) * 4;
+                const ny = (y / size) * 4;
+
+                // Simple wrapping noise
+                let noise = 0;
+                noise += Math.sin((nx + seed) * 2.5) * 0.33 + 0.33;
+                noise += Math.sin((ny + seed) * 3.5) * 0.33 + 0.33;
+                noise += Math.sin((nx + ny + seed) * 1.8) * 0.33 + 0.33;
+                noise /= 3.0;
+
+                const threshold = 0.55 - (coverage * 0.3);
+                const cloudValue = Math.max(0, (noise - threshold) / (1 - threshold));
+                const alpha = Math.pow(cloudValue, 1.5); // smoother fade
+                const value = Math.floor(alpha * 255);
+
+                // White clouds with alpha
+                data[index] = 255;
+                data[index + 1] = 255;
+                data[index + 2] = 255;
+                data[index + 3] = value; // alpha
+            }
+        }
+
+        context.putImageData(imageData, 0, 0);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.encoding = THREE.sRGBEncoding;
+        texture.needsUpdate = true;
+
+        return texture;
+    }
+
 
     /**
      * Create a procedural ocean material
@@ -581,80 +637,49 @@ export class PlanetMaterialGenerator {
     }
 
     /**
-     * Generate height map using noise functions
+     * Generate a height map using noise functions
      * @param {number} size - Texture size
      * @param {number} seed - Random seed
      * @returns {THREE.Texture} Height map texture
      */
     generateHeightMap(size, seed) {
-        // Use smaller size for better performance
-        const workingSize = Math.min(size, 256); // Maximum 256x256 for heightmap performance
         const canvas = document.createElement('canvas');
-        canvas.width = workingSize;
-        canvas.height = workingSize;
+        canvas.width = size;
+        canvas.height = size;
         const ctx = canvas.getContext('2d');
-        
-        // Fill with black background
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, workingSize, workingSize);
-        
-        const imageData = ctx.getImageData(0, 0, workingSize, workingSize);
+
+        const imageData = ctx.getImageData(0, 0, size, size);
         const data = imageData.data;
-        
-        // Use optimized algorithm with fewer detail points and fewer noise octaves
-        for (let y = 0; y < workingSize; y++) {
-            for (let x = 0; x < workingSize; x++) {
-                const nx = x / workingSize - 0.5;
-                const ny = y / workingSize - 0.5;
-                
-                // Convert to spherical coordinates
-                const phi = Math.atan2(ny, nx);
-                const theta = Math.sqrt(nx * nx + ny * ny) * Math.PI;
-                
-                // Generate height using layered noise with fewer octaves
-                let height = this.fbm(
-                    Math.cos(phi) * Math.sin(theta) + seed,
-                    Math.sin(phi) * Math.sin(theta) + seed,
-                    Math.cos(theta) + seed,
-                    4 // Reduced from 6 to 4 octaves
-                );
-                
-                // Normalize height (0-1)
+
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const theta = 2 * Math.PI * x / size;
+                const phi = Math.PI * y / size;
+
+                const nx = Math.cos(theta) * Math.sin(phi);
+                const ny = Math.sin(theta) * Math.sin(phi);
+                const nz = Math.cos(phi);
+
+                let height = this.fbm(nx + seed, ny + seed, nz + seed, 4);
                 height = (height + 1) * 0.5;
-                
-                // Add some continentality - make higher elevations more common
                 height = Math.pow(height, 1.2);
-                
-                const index = (y * workingSize + x) * 4;
+
+                const index = (y * size + x) * 4;
                 const value = Math.floor(height * 255);
-                
-                data[index] = value;     // R
-                data[index + 1] = value; // G
-                data[index + 2] = value; // B
-                data[index + 3] = 255;   // A
+
+                data[index] = value;
+                data[index + 1] = value;
+                data[index + 2] = value;
+                data[index + 3] = 255;
             }
         }
-        
+
         ctx.putImageData(imageData, 0, 0);
-        
-        // If we need to upscale to the requested size
-        if (workingSize < size) {
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = size;
-            finalCanvas.height = size;
-            const finalCtx = finalCanvas.getContext('2d');
-            
-            // Use the built-in canvas scaling to upscale
-            finalCtx.drawImage(canvas, 0, 0, size, size);
-            canvas.width = size;
-            canvas.height = size;
-            ctx.drawImage(finalCanvas, 0, 0);
-        }
-        
+
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        
+
         return texture;
     }
 
@@ -668,34 +693,25 @@ export class PlanetMaterialGenerator {
      * @returns {THREE.Texture} Diffuse map texture
      */
     generateDiffuseMap(size, heightMap, climateZone, hasOcean, oceanLevel) {
-        // Need to get height data from the height map
         const heightCanvas = document.createElement('canvas');
         heightCanvas.width = size;
         heightCanvas.height = size;
         const heightCtx = heightCanvas.getContext('2d');
-        
-        // Draw the height map to the canvas
         heightCtx.drawImage(heightMap.source.data, 0, 0);
         const heightData = heightCtx.getImageData(0, 0, size, size).data;
-        
-        // Create color map
+
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
-        
         const imageData = ctx.getImageData(0, 0, size, size);
         const data = imageData.data;
-        
-        // Get color values from climate zone - ensure proper conversion to THREE.Color
+
         const landColor = new THREE.Color(parseInt(climateZone.colors.land));
         const waterColor = new THREE.Color(parseInt(climateZone.colors.water));
-        
-        // Pre-calculate common elevation bands for better performance
         const snowColor = new THREE.Color(0xffffff);
-        const beachColor = new THREE.Color(0xd2b48c); // Sandy color
-        
-        // Pre-calculate snow amounts by climate type for better performance
+        const beachColor = new THREE.Color(0xd2b48c);
+
         const snowAmounts = {
             'ice': 0.8,
             'arctic': 0.6,
@@ -704,158 +720,117 @@ export class PlanetMaterialGenerator {
             'desert': 0
         };
         const snowAmount = snowAmounts[climateZone.name] || 0;
-        
-        // Batch process pixels for better performance 
+
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
                 const index = (y * size + x) * 4;
-                
-                // Get height value (0-1)
+
+                const theta = 2 * Math.PI * x / size;
+                const phi = Math.PI * y / size;
+
                 const height = heightData[index] / 255;
-                
-                // Determine if this is water or land with a simple comparison
+
                 if (hasOcean && height < oceanLevel) {
-                    // Water pixel - simplified calculation for performance
-                    const depthFactor = height / oceanLevel; // 0 at deepest, 1 at shore
-                    
-                    // Create a copy of the water color to modify
-                    const depthColor = new THREE.Color(climateZone.colors.water);
-                    
-                    // Darken deep water
-                    depthColor.multiplyScalar(0.5 + 0.5 * depthFactor);
-                    
-                    // Convert THREE.js color (0-1) to RGB (0-255)
-                    data[index] = Math.floor(depthColor.r * 255);       // R
-                    data[index + 1] = Math.floor(depthColor.g * 255);   // G
-                    data[index + 2] = Math.floor(depthColor.b * 255);   // B
+                    const depthFactor = height / oceanLevel;
+                    const depthColor = waterColor.clone().multiplyScalar(0.5 + 0.5 * depthFactor);
+
+                    data[index] = Math.floor(depthColor.r * 255);
+                    data[index + 1] = Math.floor(depthColor.g * 255);
+                    data[index + 2] = Math.floor(depthColor.b * 255);
                 } else {
-                    // Land pixel - properly use THREE.js color objects
-                    // Calculate normalized land height
-                    const landHeightFactor = hasOcean ? 
-                        (height - oceanLevel) / (1 - oceanLevel) : height;
-                    
-                    // Create a new color for this pixel, starting with the land color
-                    let terrainColor = new THREE.Color(climateZone.colors.land);
-                    
-                    // Apply different colors based on elevation
+                    const landHeightFactor = hasOcean ? (height - oceanLevel) / (1 - oceanLevel) : height;
+                    let terrainColor = landColor.clone();
+
                     if (landHeightFactor > 0.8) {
-                        // Snow caps - mix with white based on climate zone
-                        let snowAmount = snowAmounts[climateZone.name] || 0;
                         let snowBlendFactor = snowAmount * (landHeightFactor - 0.8) * 5;
-                        
-                        // Use THREE.js lerp for proper color blending
                         terrainColor.lerp(snowColor, snowBlendFactor);
                     } else if (landHeightFactor > 0.4) {
-                        // Mid elevations - add variations
-                        // Use a simple noise approximation
-                        const variation = ((Math.sin(x * 0.1) + Math.sin(y * 0.1)) * 0.05);
-                        
-                        // Adjust color with variation
+                        const variation = (Math.sin(theta * 5) + Math.sin(phi * 5)) * 0.03;
                         terrainColor.r = Math.max(0, Math.min(1, terrainColor.r * (1 + variation)));
                         terrainColor.g = Math.max(0, Math.min(1, terrainColor.g * (1 + variation)));
                         terrainColor.b = Math.max(0, Math.min(1, terrainColor.b * (1 + variation)));
                     } else {
-                        // Lower elevations - mix with sand/beach color
                         const beachBlendFactor = Math.min(1, Math.max(0, 1 - landHeightFactor * 2.5));
-                        
-                        // Use THREE.js lerp for proper color blending
                         terrainColor.lerp(beachColor, beachBlendFactor);
                     }
-                    
-                    // Convert THREE.js color (0-1) to RGB (0-255)
-                    data[index] = Math.floor(terrainColor.r * 255);       // R
-                    data[index + 1] = Math.floor(terrainColor.g * 255);   // G
-                    data[index + 2] = Math.floor(terrainColor.b * 255);   // B
+
+                    data[index] = Math.floor(terrainColor.r * 255);
+                    data[index + 1] = Math.floor(terrainColor.g * 255);
+                    data[index + 2] = Math.floor(terrainColor.b * 255);
                 }
-                
-                data[index + 3] = 255; // A
+
+                data[index + 3] = 255;
             }
         }
-        
+
         ctx.putImageData(imageData, 0, 0);
-        
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        
         return texture;
     }
 
     /**
-     * Generate normal map based on heightmap
+     * Generate the normal map based on heightmap
      * @param {number} size - Texture size
      * @param {THREE.Texture} heightMap - Height map texture
      * @returns {THREE.Texture} Normal map texture
      */
     generateNormalMap(size, heightMap) {
-        // Need to get height data from the height map
         const heightCanvas = document.createElement('canvas');
         heightCanvas.width = size;
         heightCanvas.height = size;
         const heightCtx = heightCanvas.getContext('2d');
-        
-        // Draw the height map to the canvas
         heightCtx.drawImage(heightMap.source.data, 0, 0);
         const heightData = heightCtx.getImageData(0, 0, size, size).data;
-        
-        // Create normal map
+
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
-        
         const imageData = ctx.getImageData(0, 0, size, size);
         const data = imageData.data;
-        
-        const strength = 2.0; // Normal map strength
-        
-        // Calculate normal vectors using Sobel operator
+
+        const strength = 2.0;
+
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
                 const index = (y * size + x) * 4;
-                
-                // Get heights of surrounding pixels
-                const x1 = (x - 1 + size) % size;
-                const x2 = (x + 1) % size;
-                const y1 = (y - 1 + size) % size;
-                const y2 = (y + 1) % size;
-                
-                const centerIndex = (y * size + x) * 4;
-                const leftIndex = (y * size + x1) * 4;
-                const rightIndex = (y * size + x2) * 4;
-                const topIndex = (y1 * size + x) * 4;
-                const bottomIndex = (y2 * size + x) * 4;
-                
-                // Get height values
-                const centerHeight = heightData[centerIndex] / 255;
-                const leftHeight = heightData[leftIndex] / 255;
-                const rightHeight = heightData[rightIndex] / 255;
-                const topHeight = heightData[topIndex] / 255;
-                const bottomHeight = heightData[bottomIndex] / 255;
-                
-                // Calculate partial derivatives
-                const dx = (rightHeight - leftHeight) * strength;
-                const dy = (bottomHeight - topHeight) * strength;
-                
-                // Calculate normal vector
+
+                const thetaL = 2 * Math.PI * ((x - 1 + size) % size) / size;
+                const thetaR = 2 * Math.PI * ((x + 1) % size) / size;
+                const phiT = Math.PI * ((y - 1 + size) % size) / size;
+                const phiB = Math.PI * ((y + 1) % size) / size;
+
+                const phi = Math.PI * y / size;
+                const theta = 2 * Math.PI * x / size;
+
+                const getHeight = (px, py) => {
+                    const idx = (py * size + px) * 4;
+                    return heightData[idx] / 255;
+                };
+
+                const hL = getHeight((x - 1 + size) % size, y);
+                const hR = getHeight((x + 1) % size, y);
+                const hT = getHeight(x, (y - 1 + size) % size);
+                const hB = getHeight(x, (y + 1) % size);
+
+                const dx = (hR - hL) * strength;
+                const dy = (hB - hT) * strength;
+
                 const normal = new THREE.Vector3(-dx, -dy, 1.0).normalize();
-                
-                // Convert normal to RGB values (0-1 -> 0-255)
-                // Normal maps store x in R, y in G, z in B
-                // Also transform from [-1,1] to [0,1] range
-                data[index] = Math.floor((normal.x * 0.5 + 0.5) * 255);     // R
-                data[index + 1] = Math.floor((normal.y * 0.5 + 0.5) * 255); // G
-                data[index + 2] = Math.floor((normal.z * 0.5 + 0.5) * 255); // B
-                data[index + 3] = 255;                                     // A
+
+                data[index] = Math.floor((normal.x * 0.5 + 0.5) * 255);
+                data[index + 1] = Math.floor((normal.y * 0.5 + 0.5) * 255);
+                data[index + 2] = Math.floor((normal.z * 0.5 + 0.5) * 255);
+                data[index + 3] = 255;
             }
         }
-        
+
         ctx.putImageData(imageData, 0, 0);
-        
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        
         return texture;
     }
 
@@ -868,82 +843,56 @@ export class PlanetMaterialGenerator {
      * @returns {THREE.Texture} Roughness map texture
      */
     generateRoughnessMap(size, heightMap, hasOcean, oceanLevel) {
-        // Need to get height data from the height map
         const heightCanvas = document.createElement('canvas');
         heightCanvas.width = size;
         heightCanvas.height = size;
         const heightCtx = heightCanvas.getContext('2d');
-        
-        // Draw the height map to the canvas
         heightCtx.drawImage(heightMap.source.data, 0, 0);
         const heightData = heightCtx.getImageData(0, 0, size, size).data;
-        
-        // Create roughness map
+
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
-        
         const imageData = ctx.getImageData(0, 0, size, size);
         const data = imageData.data;
-        
-        // Generate roughness values
+
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
                 const index = (y * size + x) * 4;
-                
-                // Get height value (0-1)
+                const theta = 2 * Math.PI * x / size;
+                const phi = Math.PI * y / size;
+
                 const height = heightData[index] / 255;
-                
-                // Determine if this is water or land
                 const isWater = hasOcean && height < oceanLevel;
-                
                 let roughness;
-                
+
                 if (isWater) {
-                    // Water has low roughness
-                    roughness = 0.1;
-                    
-                    // Slightly vary roughness near shores
-                    if (height > oceanLevel - 0.05) {
-                        roughness = 0.2; // More roughness for shallow water
-                    }
+                    roughness = height > oceanLevel - 0.05 ? 0.2 : 0.1;
                 } else {
-                    // Land has variable roughness based on elevation
-                    const landHeightFactor = (height - (hasOcean ? oceanLevel : 0)) / 
-                                             (1 - (hasOcean ? oceanLevel : 0));
-                    
+                    const landHeightFactor = (height - (hasOcean ? oceanLevel : 0)) / (1 - (hasOcean ? oceanLevel : 0));
                     if (landHeightFactor > 0.8) {
-                        // High mountains - very rough
                         roughness = 0.9;
                     } else if (landHeightFactor > 0.4) {
-                        // Mid elevations - medium roughness
-                        roughness = 0.7;
-                        
-                        // Add variations based on noise
-                        const variation = this.noise2D(x/size * 15, y/size * 15) * 0.2;
-                        roughness = Math.max(0.5, Math.min(0.8, roughness + variation));
+                        const variation = this.noise2D(Math.cos(theta) * 8, Math.sin(phi) * 8) * 0.2;
+                        roughness = Math.max(0.5, Math.min(0.8, 0.7 + variation));
                     } else {
-                        // Beaches and lowlands - less rough
                         roughness = 0.5;
                     }
                 }
-                
-                // Store roughness value
+
                 const value = Math.floor(roughness * 255);
-                data[index] = value;     // R
-                data[index + 1] = value; // G
-                data[index + 2] = value; // B
-                data[index + 3] = 255;   // A
+                data[index] = value;
+                data[index + 1] = value;
+                data[index + 2] = value;
+                data[index + 3] = 255;
             }
         }
-        
+
         ctx.putImageData(imageData, 0, 0);
-        
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        
         return texture;
     }
 
