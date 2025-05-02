@@ -15,10 +15,12 @@ class Render extends MassGravity {
 
     render() {
         requestAnimationFrame(() => this.render());
-
-        // Update controls
-        this.controls.update();
-
+        try {
+            // Update controls
+            this.controls.update();
+        } catch (err) {
+            console.log("controls not loaded", this.controls);
+        }
         // Get delta time for animations
         const delta = this.clock.getDelta() * this.timeScale * 1000;
 
