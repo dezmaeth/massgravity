@@ -335,7 +335,7 @@ export class PlanetMaterialGenerator {
      * @returns {THREE.CanvasTexture} Cloud texture
      */
     generateCloudTexture(coverage = 0.5, seed = 42) {
-        const size = 64;
+        const size = 256;
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
@@ -422,10 +422,10 @@ export class PlanetMaterialGenerator {
     generateTextures(options) {
         const { seed, climateZone, hasOcean, oceanLevel, userId = 'default' } = options;
         
-        // Ensure the seed is treated as a number for cache key
+        // Ensure the seed is treated as a number for a cache key
         const seedNum = typeof seed === 'number' ? seed : parseFloat(seed);
         
-        // Create cache key for textures
+        // Create a cache key for textures
         const cacheKey = `tex-${climateZone.name}-${seedNum.toFixed(2)}-${hasOcean?1:0}-${oceanLevel.toFixed(2)}`;
         
         // Check memory cache first (fastest)
@@ -439,7 +439,7 @@ export class PlanetMaterialGenerator {
         // Create new textures with smaller size for better performance
         const size = 256; // Use 256 for better performance
         
-        // Generate heightmap first as it's the base for the other maps
+        // Generate the heightmap first as it's the base for the other maps
         const heightMap = this.generateHeightMap(size, seedNum);
         
         // Generate other maps based on the heightmap
@@ -457,14 +457,14 @@ export class PlanetMaterialGenerator {
         // Cache the results in memory
         this.textureCache.set(cacheKey, textures);
         
-        // If memory cache is too large, remove oldest entries
+        // If the memory cache is too large, remove the oldest entries
         if (this.textureCache.size > this.maxCacheSize) {
             const oldestKey = this.textureCache.keys().next().value;
             console.log(`Memory cache full, removing oldest entry: ${oldestKey}`);
             this.textureCache.delete(oldestKey);
         }
         
-        // Try to save to disk - but don't wait for it
+        // Try to save it to disk - but don't wait for it
         this.saveTexturesToDisk(userId, cacheKey, textures);
         
         return textures;
@@ -704,6 +704,8 @@ export class PlanetMaterialGenerator {
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+
         const imageData = ctx.getImageData(0, 0, size, size);
         const data = imageData.data;
 
@@ -765,6 +767,7 @@ export class PlanetMaterialGenerator {
 
         ctx.putImageData(imageData, 0, 0);
         const texture = new THREE.CanvasTexture(canvas);
+        texture.anisotropy = 10;
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
         return texture;

@@ -10,7 +10,7 @@ const modelCache = {};
  * @param {string} name - Name of the .glb file without extension
  * @returns {Promise<THREE.Object3D>} - Configured model wrapped in a parent Object3D
  */
-export async function loadStructureModel(name) {
+export async function loadGLBModel(name) {
     if (modelCache[name]) {
         const cloned = modelCache[name].clone();
         return wrapWithSettings(cloned, name);

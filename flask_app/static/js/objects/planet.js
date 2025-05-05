@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createAtmosphereMaterial } from '../materials/atmosphere.js';
 import { PlanetMaterialGenerator } from '../materials/planetMaterial.js';
-import { loadStructureModel } from '../units/loadStructureModel.js';
+import { loadGLBModel } from '../units/loadGLBModel.js';
 
 const materialGenerator = new PlanetMaterialGenerator();
 
@@ -251,7 +251,8 @@ export class Planet {
         const meshNameMap = {
             mining: 'station_Minning_1',
             colony: 'station_ColonyBase_1',
-            // Add more as needed
+            research: 'station_Research_1',
+            defense: 'station_Defense_1'
         };
 
         let orbitRadius = this.options.radius * 1.8;
@@ -289,7 +290,7 @@ export class Planet {
         }
 
         try {
-            const model = await loadStructureModel(meshName);
+            const model = await loadGLBModel(meshName);
 
             const orbitContainer = new THREE.Object3D();
             orbitContainer.add(model);
