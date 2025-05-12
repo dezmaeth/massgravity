@@ -60,7 +60,6 @@ class MassGravity {
         ]).then(() => {
             this.initComponents();
             this.initScene();
-            this.initAudio();
             this.initInteraction();
             this.initUI();
             this.setListeners();
@@ -386,116 +385,6 @@ class MassGravity {
         // Zoomed state tracking
         this.isZoomedIn = false;
         this.zoomedPlanet = null;
-    }
-    
-    initAudio() {
-        // Check if global audio controls exist, if not create our own
-        if (window.audioControls) {
-            console.log("Using global audio controls system");
-            this.usingGlobalAudio = true;
-            
-            // Expose methods to window.audioControls for global management
-            const originalPlay = window.audioControls.play;
-            window.audioControls.play = () => {
-                originalPlay();
-                this.isMusicMuted = false;
-            };
-            
-            const originalPause = window.audioControls.pause;
-            window.audioControls.pause = () => {
-                originalPause();
-                this.isMusicMuted = true;
-            };
-            
-            // Set initial volume from global controls
-            this.targetMusicVolume = 0.7;
-            this.isMusicMuted = false;
-        } else {
-            console.log("Creating game's own audio system");
-            this.usingGlobalAudio = false;
-            
-            // Initialize background music
-            this.backgroundMusic = new Audio('/static/assets/music/track01.mp3');
-            this.backgroundMusic.loop = true;
-            this.backgroundMusic.volume = 0; // Start with volume at 0 for fade-in
-            this.targetMusicVolume = 0.7; // Default maximum volume
-            this.isMusicMuted = false;
-            
-            // Set a timeout to start playing music 15 seconds after initialization
-            setTimeout(() => {
-                this.playBackgroundMusic();
-            }, 15000);
-        }
-    }
-    
-    playBackgroundMusic() {
-        // Skip if using global audio system
-        if (this.usingGlobalAudio) return;
-        
-        // Start playing the music
-        this.backgroundMusic.play().catch(e => {
-            console.warn('Could not autoplay music. User interaction may be required:', e);
-        });
-        
-        // Fade in the volume gradually
-        let volume = 0;
-        const fadeStep = 0.01; // How much to increase volume each step
-        const fadeInterval = 100; // Milliseconds between each volume change
-        
-        this.fadeInInterval = setInterval(() => {
-            if (volume < this.targetMusicVolume) {
-                volume += fadeStep;
-                this.backgroundMusic.volume = volume;
-            } else {
-                clearInterval(this.fadeInInterval);
-                this.fadeInInterval = null;
-            }
-        }, fadeInterval);
-    }
-    
-    setMusicVolume(volume) {
-        // Skip if using global audio system
-        if (this.usingGlobalAudio) {
-            if (window.audioControls && typeof window.audioControls.setVolume === 'function') {
-                window.audioControls.setVolume(volume * 100);
-            }
-            return;
-        }
-        
-        // Set a new target volume (0.0 to 1.0)
-        this.targetMusicVolume = Math.max(0, Math.min(1, volume));
-        
-        // If not in the middle of a fade, set volume immediately
-        if (!this.fadeInInterval) {
-            this.backgroundMusic.volume = this.isMusicMuted ? 0 : this.targetMusicVolume;
-        }
-    }
-    
-    toggleMusicMute() {
-        // Skip if using global audio system
-        if (this.usingGlobalAudio) {
-            if (window.audioControls) {
-                if (this.isMusicMuted) {
-                    window.audioControls.unmute();
-                } else {
-                    window.audioControls.mute();
-                }
-                this.isMusicMuted = !this.isMusicMuted;
-            }
-            return this.isMusicMuted;
-        }
-        
-        this.isMusicMuted = !this.isMusicMuted;
-        
-        if (this.isMusicMuted) {
-            // Store current volume and set to 0
-            this.backgroundMusic.volume = 0;
-        } else {
-            // Restore volume
-            this.backgroundMusic.volume = this.targetMusicVolume;
-        }
-        
-        return this.isMusicMuted;
     }
     
     initScene() {

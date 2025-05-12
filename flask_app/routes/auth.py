@@ -83,7 +83,7 @@ def register():
         db.session.add(user)
         db.session.commit()
         
-        # Initialize game data after user is created
+        # Initialize game data after a user is created
         user.initialize_game_data()
         db.session.commit()
         
